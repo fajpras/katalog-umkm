@@ -12,7 +12,8 @@ export async function GET(request) {
     const supabase = buatKlienServer();
     const { data } = await supabase
       .from("produk")
-      .select("id, created_at");
+      .select("id, created_at, aktif")
+      .neq("aktif", false);
     daftarProduk = data || [];
   } catch {
     // Abaikan error koneksi

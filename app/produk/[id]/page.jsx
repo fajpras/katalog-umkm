@@ -17,11 +17,11 @@ export async function generateMetadata({ params }) {
     const supabase = buatKlienServer();
     const { data: produk } = await supabase
       .from("produk")
-      .select("nama, deskripsi, foto_url, harga, kategori")
+      .select("nama, deskripsi, foto_url, harga, kategori, aktif")
       .eq("id", id)
       .maybeSingle();
 
-    if (!produk) {
+    if (!produk || produk.aktif === false) {
       return {
         title: `Produk Tidak Ditemukan - ${toko.nama}`,
       };
@@ -78,12 +78,13 @@ export default async function HalamanDetailProduk({ params }) {
     if (!error && data) {
       produk = data;
 
-      // US-17: Query produk terkait kategori sama, kecualikan produk saat ini, limit 4
-      if (produk.kategori) {
+      // US-17 & US-32: Query produk terkait kategori sama (hanya yang aktif), kecualikan produk saat ini, limit 4
+      if (produk.kategori && produk.aktif !== false) {
         const { data: terkait } = await supabase
           .from("produk")
           .select("*")
           .eq("kategori", produk.kategori)
+          .neq("aktif", false)
           .neq("id", id)
           .limit(4);
 
@@ -94,7 +95,8 @@ export default async function HalamanDetailProduk({ params }) {
     // Abaikan error koneksi
   }
 
-  if (!produk) {
+  // US-32: Produk nonaktif memicu 404 di sisi publik
+  if (!produk || produk.aktif === false) {
     notFound();
   }
 

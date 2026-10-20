@@ -557,3 +557,33 @@ export async function hapusKategori(id, namaKategori) {
   revalidatePath("/");
   return { sukses: true };
 }
+
+
+export async function toggleAktifProduk(id, statusAktifSekarang) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  if (!id) return { error: "ID produk tidak valid." };
+
+  const { error } = await supabase
+    .from("produk")
+    .update({ aktif: !statusAktifSekarang })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message || "Gagal mengubah status aktif produk." };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  revalidatePath("/sitemap.xml");
+  return { sukses: true };
+}
