@@ -114,3 +114,14 @@ export async function kirimUlasan(prevState, formData) {
     return { error: `Terjadi kesalahan saat menyimpan ulasan: ${err.message}` };
   }
 }
+
+
+export async function catatKlikWA(produkId) {
+  if (!produkId) return;
+  try {
+    const supabase = buatKlienServer();
+    await supabase.from("log_klik_wa").insert({ produk_id: produkId });
+  } catch {
+    // Abaikan error koneksi agar tidak mengganggu alur pengguna
+  }
+}
