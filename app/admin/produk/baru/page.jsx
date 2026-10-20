@@ -1,15 +1,36 @@
+import { redirect } from "next/navigation";
 import NavAdmin from "@/components/NavAdmin";
 import FormProduk from "@/components/FormProduk";
-import CatatanBelumAktif from "@/components/CatatanBelumAktif";
+import { buatKlienSesi } from "@/lib/supabase/auth";
+import { tambahProduk } from "@/app/admin/actions";
 
-// US-08 (bonus di jalur offline): tambah produk.
-export default function HalamanTambahProduk() {
+export const dynamic = "force-dynamic";
+
+export default async function HalamanTambahProduk() {
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/admin/login");
+  }
+
   return (
     <div className="flex flex-col gap-6 py-8">
       <NavAdmin />
-      <h1 className="text-2xl font-extrabold">Tambah produk</h1>
-      <CatatanBelumAktif>Simpan produk belum berfungsi: lihat US-08.</CatatanBelumAktif>
-      <FormProduk labelTombol="Simpan produk" />
+      <div>
+        <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 font-[family-name:var(--font-display)]">
+          Tambah Produk
+        </h1>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          Masukkan informasi produk baru untuk ditampilkan di katalog toko.
+        </p>
+      </div>
+
+      <div className="rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900/50 sm:p-8">
+        <FormProduk labelTombol="Simpan produk" action={tambahProduk} />
+      </div>
     </div>
   );
 }

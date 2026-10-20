@@ -47,7 +47,7 @@ export default async function HalamanAdmin() {
           </p>
         </div>
         {/* US-08: tambah produk */}
-        <Tombol href="/admin/produk/baru">+ Tambah Produk</Tombol>
+        <Tombol href="/admin/produk/baru" varian="admin">+ Tambah Produk</Tombol>
       </div>
 
       {/* d. State error */}

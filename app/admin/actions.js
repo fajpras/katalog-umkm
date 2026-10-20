@@ -36,6 +36,17 @@ export async function keluar() {
 }
 
 export async function gantiPassword(prevState, formData) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login. Silakan login kembali." };
+  }
+
   const data = formData instanceof FormData ? formData : prevState;
   const passwordBaru = data?.get?.("password_baru")?.toString() || "";
   const konfirmasiPassword = data?.get?.("konfirmasi_password")?.toString() || "";
@@ -52,16 +63,6 @@ export async function gantiPassword(prevState, formData) {
     return { error: "Konfirmasi password tidak cocok dengan password baru." };
   }
 
-  const supabase = await buatKlienSesi();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return { error: "Sesi telah berakhir atau Anda belum login. Silakan login kembali." };
-  }
-
   const { error } = await supabase.auth.updateUser({
     password: passwordBaru,
   });
@@ -73,3 +74,45 @@ export async function gantiPassword(prevState, formData) {
   return { sukses: "Password berhasil diganti." };
 }
 
+export async function tambahProduk(prevState, formData) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login. Silakan login kembali." };
+  }
+
+  const data = formData instanceof FormData ? formData : prevState;
+  const nama = data?.get?.("nama")?.toString()?.trim() || "";
+  const hargaRaw = data?.get?.("harga")?.toString()?.trim() || "";
+  const kategori = data?.get?.("kategori")?.toString()?.trim() || "Umum";
+  const foto_url = data?.get?.("foto_url")?.toString()?.trim() || "/produk/kopi.svg";
+  const deskripsi = data?.get?.("deskripsi")?.toString()?.trim() || "";
+
+  if (!nama) {
+    return { error: "Nama produk wajib diisi." };
+  }
+
+  const harga = parseInt(hargaRaw, 10);
+  if (isNaN(harga) || harga < 0) {
+    return { error: "Harga harus berupa angka valid dan tidak boleh negatif." };
+  }
+
+  const { error: insertError } = await supabase.from("produk").insert({
+    nama,
+    harga,
+    kategori,
+    foto_url,
+    deskripsi,
+  });
+
+  if (insertError) {
+    return { error: insertError.message || "Gagal menyimpan produk baru." };
+  }
+
+  redirect("/admin");
+}
