@@ -1,5 +1,6 @@
 import Link from "next/link";
 import KartuProduk from "@/components/KartuProduk";
+import PilihUrutan from "@/components/PilihUrutan";
 import { toko } from "@/lib/toko";
 import { buatKlienServer } from "@/lib/supabase/server";
 
@@ -9,6 +10,7 @@ export default async function HalamanKatalog({ searchParams }) {
   const sp = (await searchParams) || {};
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const kategori = typeof sp.kategori === "string" ? sp.kategori.trim() : "";
+  const urut = typeof sp.urut === "string" ? sp.urut.trim() : "terbaru";
 
   let daftarProduk = [];
   let semuaKategori = ["Semua"];
@@ -24,7 +26,7 @@ export default async function HalamanKatalog({ searchParams }) {
       semuaKategori = ["Semua", ...Array.from(kategoriSet)];
     }
 
-    // Bangun query produk dengan filter
+    // Bangun query produk dengan filter dan urutan
     let query = supabase.from("produk").select("*");
 
     if (q) {
@@ -35,7 +37,14 @@ export default async function HalamanKatalog({ searchParams }) {
       query = query.eq("kategori", kategori);
     }
 
-    query = query.order("id", { ascending: true });
+    if (urut === "termurah") {
+      query = query.order("harga", { ascending: true });
+    } else if (urut === "termahal") {
+      query = query.order("harga", { ascending: false });
+    } else {
+      // Default: terbaru
+      query = query.order("created_at", { ascending: false });
+    }
 
     const { data, error } = await query;
 
@@ -48,7 +57,7 @@ export default async function HalamanKatalog({ searchParams }) {
     pesanError = err.message;
   }
 
-  const adaFilter = Boolean(q || (kategori && kategori !== "Semua"));
+  const adaFilter = Boolean(q || (kategori && kategori !== "Semua") || (urut && urut !== "terbaru"));
 
   return (
     <>
@@ -72,6 +81,9 @@ export default async function HalamanKatalog({ searchParams }) {
           <form action="/" method="GET" className="relative mt-6 max-w-xl">
             {kategori && kategori !== "Semua" && (
               <input type="hidden" name="kategori" value={kategori} />
+            )}
+            {urut && urut !== "terbaru" && (
+              <input type="hidden" name="urut" value={urut} />
             )}
             <div className="relative flex items-center">
               <svg
@@ -107,14 +119,14 @@ export default async function HalamanKatalog({ searchParams }) {
           <div className="mt-5 flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
             {semuaKategori.map((kat) => {
               const isAktif = kat === "Semua" ? !kategori || kategori === "Semua" : kategori === kat;
-              let href = "/";
-              if (kat === "Semua") {
-                href = q ? `/?q=${encodeURIComponent(q)}` : "/";
-              } else {
-                href = q
-                  ? `/?q=${encodeURIComponent(q)}&kategori=${encodeURIComponent(kat)}`
-                  : `/?kategori=${encodeURIComponent(kat)}`;
-              }
+              
+              const params = new URLSearchParams();
+              if (q) params.set("q", q);
+              if (kat !== "Semua") params.set("kategori", kat);
+              if (urut && urut !== "terbaru") params.set("urut", urut);
+
+              const queryString = params.toString();
+              const href = queryString ? `/?${queryString}` : "/";
 
               return (
                 <Link
@@ -136,16 +148,21 @@ export default async function HalamanKatalog({ searchParams }) {
 
       {/* Daftar Produk */}
       <section aria-labelledby="judul-produk" className="mb-14 flex flex-col gap-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2
-            id="judul-produk"
-            className="text-xl font-bold text-zinc-900 dark:text-zinc-100 font-[family-name:var(--font-display)] sm:text-2xl"
-          >
-            {kategori && kategori !== "Semua" ? `Kategori: ${kategori}` : "Semua Produk"}
-          </h2>
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            Menampilkan {daftarProduk.length} produk
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/80 pb-4 dark:border-zinc-800/80">
+          <div>
+            <h2
+              id="judul-produk"
+              className="text-xl font-bold text-zinc-900 dark:text-zinc-100 font-[family-name:var(--font-display)] sm:text-2xl"
+            >
+              {kategori && kategori !== "Semua" ? `Kategori: ${kategori}` : "Semua Produk"}
+            </h2>
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+              Menampilkan {daftarProduk.length} produk
+            </p>
+          </div>
+
+          {/* Dropdown Urutkan */}
+          <PilihUrutan urutAktif={urut} />
         </div>
 
         {pesanError ? (
