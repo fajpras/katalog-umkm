@@ -2,6 +2,7 @@ import Link from "next/link";
 import { toko } from "@/lib/toko";
 import SakelarTema from "@/components/SakelarTema";
 import TombolKeranjangHeader from "@/components/TombolKeranjangHeader";
+import TombolFavoritHeader from "@/components/TombolFavoritHeader";
 
 export default function Header() {
   return (
@@ -13,13 +14,14 @@ export default function Header() {
         >
           {toko.nama}
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <Link
             href="/tentang"
-            className="text-xs sm:text-sm font-semibold text-zinc-600 transition-colors hover:text-emerald-600 dark:text-zinc-400 dark:hover:text-emerald-400"
+            className="mr-1 text-xs sm:text-sm font-semibold text-zinc-600 transition-colors hover:text-emerald-600 dark:text-zinc-400 dark:hover:text-emerald-400"
           >
             Tentang
           </Link>
+          <TombolFavoritHeader />
           <TombolKeranjangHeader />
           <SakelarTema />
         </div>

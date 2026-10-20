@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import DrawerKeranjang from "@/components/DrawerKeranjang";
 import { KeranjangProvider } from "@/context/KeranjangContext";
+import { FavoritProvider } from "@/context/FavoritContext";
 import { toko } from "@/lib/toko";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -45,12 +46,14 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 antialiased transition-colors duration-200 dark:bg-zinc-950 dark:text-zinc-50 font-[family-name:var(--font-body)]">
-        <KeranjangProvider>
-          <Header />
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4">{children}</main>
-          <Footer />
-          <DrawerKeranjang />
-        </KeranjangProvider>
+        <FavoritProvider>
+          <KeranjangProvider>
+            <Header />
+            <main className="mx-auto w-full max-w-5xl flex-1 px-4">{children}</main>
+            <Footer />
+            <DrawerKeranjang />
+          </KeranjangProvider>
+        </FavoritProvider>
       </body>
     </html>
   );
