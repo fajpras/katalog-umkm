@@ -4,6 +4,7 @@ import NavAdmin from "@/components/NavAdmin";
 import TabelProduk from "@/components/TabelProduk";
 import PaginasiAdmin from "@/components/PaginasiAdmin";
 import Tombol from "@/components/Tombol";
+import { formatRupiah } from "@/lib/format";
 import { buatKlienSesi } from "@/lib/supabase/auth";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +62,51 @@ export default async function HalamanAdmin({ searchParams }) {
     }
   } catch {
     // Abaikan error metrik
+  }
+
+  // US-41: Agregasi 5 produk terlaris dari log_klik_wa (group by produk_id, count(*))
+  let produkTerlaris = [];
+  try {
+    const { data: logKlik, error: logErr } = await supabase
+      .from("log_klik_wa")
+      .select("produk_id");
+
+    if (!logErr && logKlik && logKlik.length > 0) {
+      const hitungMap = {};
+      logKlik.forEach((item) => {
+        if (item.produk_id) {
+          const pid = String(item.produk_id);
+          hitungMap[pid] = (hitungMap[pid] || 0) + 1;
+        }
+      });
+
+      const sortedRanking = Object.entries(hitungMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+      if (sortedRanking.length > 0) {
+        const ids = sortedRanking.map(([id]) => id);
+        const { data: infoProduk } = await supabase
+          .from("produk")
+          .select("id, nama, harga, foto_url, kategori")
+          .in("id", ids);
+
+        const produkMap = new Map((infoProduk || []).map((p) => [String(p.id), p]));
+
+        produkTerlaris = sortedRanking
+          .map(([id, totalKlik]) => {
+            const p = produkMap.get(id);
+            if (!p) return null;
+            return {
+              ...p,
+              totalKlik,
+            };
+          })
+          .filter(Boolean);
+      }
+    }
+  } catch {
+    // Abaikan jika tabel log_klik_wa belum dibuat
   }
 
   // Query tabel produk dengan cari nama (q) dan paginasi server-side 10 baris/halaman
@@ -172,39 +218,111 @@ export default async function HalamanAdmin({ searchParams }) {
         </div>
       </div>
 
-      {/* US-30: Bar Statistik Produk per Kategori */}
-      {daftarStatKategori.length > 0 && (
-        <div className="rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900 sm:p-6">
-          <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 font-[family-name:var(--font-display)]">
-            Distribusi Produk per Kategori
-          </h2>
-          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-            Perbandingan persentase dan jumlah produk di tiap kategori.
-          </p>
+      {/* Widget Grid: Distribusi Kategori & 5 Produk Terlaris */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* US-30: Bar Statistik Produk per Kategori */}
+        {daftarStatKategori.length > 0 && (
+          <div className="flex flex-col rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900 sm:p-6">
+            <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 font-[family-name:var(--font-display)]">
+              Distribusi Produk per Kategori
+            </h2>
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+              Perbandingan persentase dan jumlah produk di tiap kategori.
+            </p>
 
-          <div className="mt-4 flex flex-col gap-3">
-            {daftarStatKategori.map(([namaKategori, jumlah]) => {
-              const persentase = totalProdukKeseluruhan > 0 ? Math.round((jumlah / totalProdukKeseluruhan) * 100) : 0;
-              return (
-                <div key={namaKategori} className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-zinc-800 dark:text-zinc-200">{namaKategori}</span>
-                    <span className="text-zinc-500 dark:text-zinc-400">
-                      {jumlah} produk ({persentase}%)
+            <div className="mt-4 flex flex-col gap-3">
+              {daftarStatKategori.map(([namaKategori, jumlah]) => {
+                const persentase = totalProdukKeseluruhan > 0 ? Math.round((jumlah / totalProdukKeseluruhan) * 100) : 0;
+                return (
+                  <div key={namaKategori} className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-zinc-800 dark:text-zinc-200">{namaKategori}</span>
+                      <span className="text-zinc-500 dark:text-zinc-400">
+                        {jumlah} produk ({persentase}%)
+                      </span>
+                    </div>
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
+                        style={{ width: `${persentase}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* US-41: Widget 5 Produk Terlaris (Paling Sering Diklik WhatsApp) */}
+        <div className="flex flex-col rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900 sm:p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 font-[family-name:var(--font-display)]">
+                🔥 5 Produk Terlaris
+              </h2>
+              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                Peringkat produk paling sering diklik pesan via WhatsApp
+              </p>
+            </div>
+            <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+              Live Click Data
+            </span>
+          </div>
+
+          <div className="mt-4 flex flex-1 flex-col gap-3">
+            {produkTerlaris.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
+                <span className="text-2xl">📊</span>
+                <p className="mt-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Belum Ada Data Klik WhatsApp
+                </p>
+                <p className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500 max-w-xs">
+                  Ketika pembeli mengklik tombol pesan WhatsApp di katalog, peringkat terlaris akan otomatis terakumulasi di sini.
+                </p>
+              </div>
+            ) : (
+              produkTerlaris.map((p, index) => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 rounded-2xl border border-zinc-100 bg-zinc-50/60 p-2.5 transition hover:bg-zinc-100/60 dark:border-zinc-800/60 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/80"
+                >
+                  <span
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-black ${
+                      index === 0
+                        ? "bg-amber-500 text-white"
+                        : index === 1
+                        ? "bg-zinc-400 text-white"
+                        : index === 2
+                        ? "bg-amber-700 text-white"
+                        : "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    #{index + 1}
+                  </span>
+
+                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
+                    <img src={p.foto_url} alt={p.nama} className="h-full w-full object-cover" />
+                  </div>
+
+                  <div className="flex flex-1 flex-col min-w-0">
+                    <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                      {p.nama}
+                    </span>
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      {formatRupiah(p.harga)} &bull; {p.kategori}
                     </span>
                   </div>
-                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
-                      style={{ width: `${persentase}%` }}
-                    />
-                  </div>
+
+                  <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    {p.totalKlik} klik WA
+                  </span>
                 </div>
-              );
-            })}
+              ))
+            )}
           </div>
         </div>
-      )}
+      </div>
 
       {/* US-33: Form Cari & Aksi Tambah Produk */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
