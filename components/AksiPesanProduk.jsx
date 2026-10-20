@@ -10,11 +10,19 @@ export default function AksiPesanProduk({ produk }) {
     produk.stok === 0 ||
     (produk.stok !== undefined && produk.stok !== null && Number(produk.stok) <= 0);
 
+  const hargaEfektif =
+    produk.harga_diskon !== null &&
+    produk.harga_diskon !== undefined &&
+    Number(produk.harga_diskon) > 0 &&
+    Number(produk.harga_diskon) < Number(produk.harga)
+      ? Number(produk.harga_diskon)
+      : Number(produk.harga);
+
   const [jumlah, setJumlah] = useState(1);
   const daftarVarian = ["Reguler", "Spesial", "Besar"];
   const [varianTerpilih, setVarianTerpilih] = useState("Reguler");
 
-  const totalHarga = produk.harga * jumlah;
+  const totalHarga = hargaEfektif * jumlah;
   const nomor = toko.nomorWhatsApp.replace(/[^0-9]/g, "");
 
   const teksPesan = `Halo, saya ingin memesan *${produk.nama}* (Varian: ${varianTerpilih}, Jumlah: ${jumlah}) seharga total ${formatRupiah(totalHarga)}.`;

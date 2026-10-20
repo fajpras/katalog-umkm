@@ -90,7 +90,9 @@ export async function tambahProduk(prevState, formData) {
   const data = formData instanceof FormData ? formData : prevState;
   const nama = data?.get?.("nama")?.toString()?.trim() || "";
   const hargaRaw = data?.get?.("harga")?.toString()?.trim() || "";
+  const hargaDiskonRaw = data?.get?.("harga_diskon")?.toString()?.trim() || "";
   const kategori = data?.get?.("kategori")?.toString()?.trim() || "Umum";
+  const label = data?.get?.("label")?.toString()?.trim() || null;
   const foto_url = data?.get?.("foto_url")?.toString()?.trim() || "/produk/kopi.svg";
   const deskripsi = data?.get?.("deskripsi")?.toString()?.trim() || "";
   const fotoGaleriRaw = data?.get?.("foto_galeri")?.toString()?.trim() || "";
@@ -113,10 +115,17 @@ export async function tambahProduk(prevState, formData) {
     return { error: "Harga harus berupa angka valid dan tidak boleh negatif." };
   }
 
+  const harga_diskon = hargaDiskonRaw !== "" ? parseInt(hargaDiskonRaw, 10) : null;
+  if (harga_diskon !== null && (isNaN(harga_diskon) || harga_diskon < 0)) {
+    return { error: "Harga diskon harus berupa angka valid dan tidak boleh negatif." };
+  }
+
   const payload = {
     nama,
     harga,
+    harga_diskon: harga_diskon !== null && !isNaN(harga_diskon) ? harga_diskon : null,
     kategori,
+    label: label || null,
     foto_url,
     deskripsi,
     foto_galeri,
@@ -136,7 +145,7 @@ export async function tambahProduk(prevState, formData) {
     if (res.error.code === "42703") {
       const msg = res.error.message || "";
       let stripped = false;
-      for (const col of ["foto_galeri", "stok", "tersedia"]) {
+      for (const col of ["foto_galeri", "stok", "tersedia", "harga_diskon", "label"]) {
         if (msg.includes(col) && p[col] !== undefined) {
           delete p[col];
           stripped = true;
@@ -173,7 +182,9 @@ export async function ubahProduk(prevState, formData) {
   const id = data?.get?.("id")?.toString();
   const nama = data?.get?.("nama")?.toString()?.trim() || "";
   const hargaRaw = data?.get?.("harga")?.toString()?.trim() || "";
+  const hargaDiskonRaw = data?.get?.("harga_diskon")?.toString()?.trim() || "";
   const kategori = data?.get?.("kategori")?.toString()?.trim() || "Umum";
+  const label = data?.get?.("label")?.toString()?.trim() || null;
   const foto_url = data?.get?.("foto_url")?.toString()?.trim() || "/produk/kopi.svg";
   const deskripsi = data?.get?.("deskripsi")?.toString()?.trim() || "";
   const fotoGaleriRaw = data?.get?.("foto_galeri")?.toString()?.trim() || "";
@@ -200,10 +211,17 @@ export async function ubahProduk(prevState, formData) {
     return { error: "Harga harus berupa angka valid dan tidak boleh negatif." };
   }
 
+  const harga_diskon = hargaDiskonRaw !== "" ? parseInt(hargaDiskonRaw, 10) : null;
+  if (harga_diskon !== null && (isNaN(harga_diskon) || harga_diskon < 0)) {
+    return { error: "Harga diskon harus berupa angka valid dan tidak boleh negatif." };
+  }
+
   const payload = {
     nama,
     harga,
+    harga_diskon: harga_diskon !== null && !isNaN(harga_diskon) ? harga_diskon : null,
     kategori,
+    label: label || null,
     foto_url,
     deskripsi,
     foto_galeri,
@@ -223,7 +241,7 @@ export async function ubahProduk(prevState, formData) {
     if (res.error.code === "42703") {
       const msg = res.error.message || "";
       let stripped = false;
-      for (const col of ["foto_galeri", "stok", "tersedia"]) {
+      for (const col of ["foto_galeri", "stok", "tersedia", "harga_diskon", "label"]) {
         if (msg.includes(col) && p[col] !== undefined) {
           delete p[col];
           stripped = true;

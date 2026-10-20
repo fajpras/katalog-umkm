@@ -63,22 +63,40 @@ export default function FormProduk({ produk = {}, labelTombol = "Simpan produk",
         required
       />
 
-      <Input
-        label="Harga (Rp)"
-        name="harga"
-        type="number"
-        min="0"
-        defaultValue={produk.harga ?? ""}
-        placeholder="Contoh: 45000"
-        required
-      />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Input
+          label="Harga Normal (Rp)"
+          name="harga"
+          type="number"
+          min="0"
+          defaultValue={produk.harga ?? ""}
+          placeholder="Contoh: 45000"
+          required
+        />
+        <Input
+          label="Harga Diskon (Rp, opsional)"
+          name="harga_diskon"
+          type="number"
+          min="0"
+          defaultValue={produk.harga_diskon ?? ""}
+          placeholder="Contoh: 35000 (jika promo)"
+        />
+      </div>
 
-      <Input
-        label="Kategori"
-        name="kategori"
-        defaultValue={produk.kategori || ""}
-        placeholder="Contoh: Minuman, Camilan, Kerajinan"
-      />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Input
+          label="Kategori"
+          name="kategori"
+          defaultValue={produk.kategori || ""}
+          placeholder="Contoh: Minuman, Camilan, Kerajinan"
+        />
+        <Input
+          label="Label / Badge (opsional)"
+          name="label"
+          defaultValue={produk.label || ""}
+          placeholder="Contoh: Terlaris, Baru, Promo"
+        />
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input

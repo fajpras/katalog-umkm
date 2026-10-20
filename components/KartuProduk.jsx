@@ -7,6 +7,12 @@ export default function KartuProduk({ produk }) {
     produk.stok === 0 ||
     (produk.stok !== undefined && produk.stok !== null && Number(produk.stok) <= 0);
 
+  const adaDiskon =
+    produk.harga_diskon !== null &&
+    produk.harga_diskon !== undefined &&
+    Number(produk.harga_diskon) > 0 &&
+    Number(produk.harga_diskon) < Number(produk.harga);
+
   return (
     <Link
       href={`/produk/${produk.id}`}
@@ -26,6 +32,11 @@ export default function KartuProduk({ produk }) {
               {produk.kategori}
             </span>
           )}
+          {produk.label && (
+            <span className="rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-bold text-white shadow-sm dark:bg-amber-600">
+              {produk.label}
+            </span>
+          )}
           {isHabis && (
             <span className="rounded-full bg-rose-600 px-2.5 py-0.5 text-xs font-bold text-white shadow-sm dark:bg-rose-500">
               Habis
@@ -40,9 +51,22 @@ export default function KartuProduk({ produk }) {
         <h3 className="line-clamp-2 text-sm sm:text-base font-semibold text-zinc-900 transition-colors group-hover:text-emerald-600 dark:text-zinc-100 dark:group-hover:text-emerald-400">
           {produk.nama}
         </h3>
-        <p className="mt-auto self-start text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 font-[family-name:var(--font-display)]">
-          {formatRupiah(produk.harga)}
-        </p>
+        <div className="mt-auto flex flex-wrap items-baseline gap-2 pt-1 font-[family-name:var(--font-display)]">
+          {adaDiskon ? (
+            <>
+              <span className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                {formatRupiah(produk.harga_diskon)}
+              </span>
+              <span className="text-xs font-normal text-zinc-400 line-through dark:text-zinc-500">
+                {formatRupiah(produk.harga)}
+              </span>
+            </>
+          ) : (
+            <span className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
+              {formatRupiah(produk.harga)}
+            </span>
+          )}
+        </div>
       </div>
     </Link>
   );

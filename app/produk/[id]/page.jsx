@@ -49,6 +49,12 @@ export default async function HalamanDetailProduk({ params }) {
     produk.stok === 0 ||
     (produk.stok !== undefined && produk.stok !== null && Number(produk.stok) <= 0);
 
+  const adaDiskon =
+    produk.harga_diskon !== null &&
+    produk.harga_diskon !== undefined &&
+    Number(produk.harga_diskon) > 0 &&
+    Number(produk.harga_diskon) < Number(produk.harga);
+
   return (
     <div className="pb-24 pt-4 md:pb-12">
       {/* Breadcrumb */}
@@ -79,6 +85,11 @@ export default async function HalamanDetailProduk({ params }) {
               <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                 {produk.kategori || "Umum"}
               </span>
+              {produk.label && (
+                <span className="inline-flex items-center rounded-full bg-amber-500 px-3 py-1 text-xs font-bold text-white shadow-sm dark:bg-amber-600">
+                  {produk.label}
+                </span>
+              )}
               {isHabis && (
                 <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-700 dark:bg-rose-950 dark:text-rose-300">
                   Stok Habis
@@ -88,9 +99,22 @@ export default async function HalamanDetailProduk({ params }) {
             <h1 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight text-zinc-900 dark:text-zinc-50 font-[family-name:var(--font-display)] sm:text-4xl">
               {produk.nama}
             </h1>
-            <p className="mt-3 text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-[family-name:var(--font-display)] sm:text-3xl">
-              {formatRupiah(produk.harga)}
-            </p>
+            <div className="mt-3 flex flex-wrap items-baseline gap-3">
+              {adaDiskon ? (
+                <>
+                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-[family-name:var(--font-display)] sm:text-3xl">
+                    {formatRupiah(produk.harga_diskon)}
+                  </p>
+                  <p className="text-base text-zinc-400 line-through dark:text-zinc-500 sm:text-lg">
+                    {formatRupiah(produk.harga)}
+                  </p>
+                </>
+              ) : (
+                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-[family-name:var(--font-display)] sm:text-3xl">
+                  {formatRupiah(produk.harga)}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Stepper Jumlah, Varian & WhatsApp CTA */}
