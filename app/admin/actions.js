@@ -203,3 +203,74 @@ export async function hapusProduk(idOrFormData) {
   revalidatePath("/");
   return { sukses: true };
 }
+
+export async function buatDeskripsiAI(nama, kategori = "Umum") {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login. Silakan login kembali." };
+  }
+
+  if (!nama || typeof nama !== "string" || !nama.trim()) {
+    return { error: "Nama produk harus diisi terlebih dahulu sebelum membuat deskripsi AI." };
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return { error: "GEMINI_API_KEY belum disetel di environment variable server (.env.local)." };
+  }
+
+  try {
+    const prompt = `Anda adalah copywriter profesional untuk katalog produk UMKM Indonesia.
+Buatlah deskripsi produk yang menarik, ramah, meyakinkan pembeli, dan singkat (2-3 kalimat padat) untuk produk berikut:
+Nama Produk: ${nama.trim()}
+Kategori: ${kategori?.trim() || "Umum"}
+
+Ketentuan:
+- Langsung berikan teks deskripsi saja tanpa pengantar atau tanda petik.
+- Tonjolkan rasa/kualitas bahan, keunikan, atau manfaat produk.
+- Gunakan bahasa Indonesia yang baik, santun, dan menggugah selera/minat.`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: prompt }],
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => null);
+      return {
+        error:
+          errBody?.error?.message ||
+          `Gemini API mengembalikan status error ${response.status}.`,
+      };
+    }
+
+    const data = await response.json();
+    const hasil = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+    if (!hasil) {
+      return { error: "AI tidak menghasilkan teks deskripsi." };
+    }
+
+    return { deskripsi: hasil };
+  } catch (err) {
+    return { error: `Gagal memanggil Gemini AI: ${err.message}` };
+  }
+}

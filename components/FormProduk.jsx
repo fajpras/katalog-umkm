@@ -1,11 +1,43 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Input from "@/components/Input";
 import Tombol from "@/components/Tombol";
+import { buatDeskripsiAI } from "@/app/admin/actions";
 
 export default function FormProduk({ produk = {}, labelTombol = "Simpan produk", action }) {
   const [state, formAction, isPending] = useActionState(action, null);
+  const [deskripsi, setDeskripsi] = useState(produk.deskripsi || "");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
+
+  const handleGenerateAI = async (e) => {
+    e.preventDefault();
+    setAiError(null);
+
+    const form = e.currentTarget.closest("form");
+    const namaInput = form?.querySelector('input[name="nama"]');
+    const kategoriInput = form?.querySelector('input[name="kategori"]');
+
+    const nama = namaInput?.value?.trim() || "";
+    const kategori = kategoriInput?.value?.trim() || "Umum";
+
+    if (!nama) {
+      setAiError("Isi nama produk terlebih dahulu sebelum membuat deskripsi dengan AI.");
+      namaInput?.focus();
+      return;
+    }
+
+    setIsAiLoading(true);
+    const hasil = await buatDeskripsiAI(nama, kategori);
+    setIsAiLoading(false);
+
+    if (hasil?.error) {
+      setAiError(hasil.error);
+    } else if (hasil?.deskripsi) {
+      setDeskripsi(hasil.deskripsi);
+    }
+  };
 
   return (
     <form action={formAction} className="flex max-w-2xl flex-col gap-5">
@@ -14,6 +46,12 @@ export default function FormProduk({ produk = {}, labelTombol = "Simpan produk",
       {state?.error && (
         <div className="rounded-2xl border border-red-200 bg-red-50/80 p-4 text-sm font-medium text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
           {state.error}
+        </div>
+      )}
+
+      {aiError && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm font-medium text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
+          {aiError}
         </div>
       )}
 
@@ -49,14 +87,41 @@ export default function FormProduk({ produk = {}, labelTombol = "Simpan produk",
         defaultValue={produk.foto_url || ""}
       />
 
-      <Input
-        label="Deskripsi"
-        name="deskripsi"
-        textarea
-        rows={4}
-        placeholder="Jelaskan keunggulan, bahan, atau cara penyajian produk..."
-        defaultValue={produk.deskripsi || ""}
-      />
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+            Deskripsi
+          </label>
+          <button
+            type="button"
+            onClick={handleGenerateAI}
+            disabled={isAiLoading}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-300 hover:shadow-md active:scale-95 disabled:opacity-50"
+          >
+            {isAiLoading ? (
+              <>
+                <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                <span>Menulis deskripsi...</span>
+              </>
+            ) : (
+              <>
+                <span>✨ Buat Deskripsi AI</span>
+              </>
+            )}
+          </button>
+        </div>
+        <textarea
+          name="deskripsi"
+          rows={4}
+          value={deskripsi}
+          onChange={(e) => setDeskripsi(e.target.value)}
+          placeholder="Jelaskan keunggulan, bahan, atau cara penyajian produk... Atau klik '✨ Buat Deskripsi AI' di atas."
+          className="w-full rounded-2xl border border-zinc-200/80 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-800/80 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-indigo-400"
+        />
+      </div>
 
       <div className="flex items-center gap-3 pt-2">
         <Tombol type="submit" varian="admin" disabled={isPending}>

@@ -5,6 +5,8 @@ const gaya = {
     "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 shadow-sm hover:shadow-lg dark:bg-emerald-500 dark:hover:bg-emerald-600",
   admin:
     "bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95 shadow-sm hover:shadow-lg dark:bg-indigo-500 dark:hover:bg-indigo-600",
+  ai:
+    "bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-sm hover:shadow-lg active:scale-95",
   garis:
     "border border-zinc-200/80 bg-white text-zinc-700 hover:bg-zinc-100 active:scale-95 dark:border-zinc-800/80 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800",
   bahaya:
