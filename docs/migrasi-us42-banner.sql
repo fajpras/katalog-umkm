@@ -22,3 +22,4 @@ CREATE POLICY "Admin dapat mengelola banner"
   TO authenticated
   USING (true)
   WITH CHECK (true);
+
