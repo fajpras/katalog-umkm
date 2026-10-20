@@ -30,10 +30,20 @@ export async function GET() {
   }
 
   // b. Query kolom id, nama, harga, kategori, aktif
-  const { data: daftarProduk, error } = await supabase
+  let { data: daftarProduk, error } = await supabase
     .from("produk")
     .select("id, nama, harga, kategori, aktif")
     .order("created_at", { ascending: false });
+
+  // Fallback jika kolom aktif belum ada di database Supabase
+  if (error && error.code === "42703") {
+    const res = await supabase
+      .from("produk")
+      .select("id, nama, harga, kategori")
+      .order("created_at", { ascending: false });
+    daftarProduk = res.data?.map((p) => ({ ...p, aktif: true })) || [];
+    error = res.error;
+  }
 
   if (error) {
     return new NextResponse(`Gagal mengambil data produk: ${error.message}`, { status: 500 });

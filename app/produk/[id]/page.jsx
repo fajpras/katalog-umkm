@@ -17,11 +17,20 @@ export async function generateMetadata({ params }) {
 
   try {
     const supabase = buatKlienServer();
-    const { data: produk } = await supabase
+    let { data: produk, error: prodErr } = await supabase
       .from("produk")
       .select("nama, deskripsi, foto_url, harga, kategori, aktif")
       .eq("id", id)
       .maybeSingle();
+
+    if (prodErr && prodErr.code === "42703") {
+      const res = await supabase
+        .from("produk")
+        .select("nama, deskripsi, foto_url, harga, kategori")
+        .eq("id", id)
+        .maybeSingle();
+      produk = res.data;
+    }
 
     if (!produk || produk.aktif === false) {
       return {
@@ -81,15 +90,25 @@ export default async function HalamanDetailProduk({ params }) {
     if (!error && data) {
       produk = data;
 
-      // US-17 & US-32: Query produk terkait kategori sama (hanya yang aktif), kecualikan produk saat ini, limit 4
-      if (produk.kategori && produk.aktif !== false) {
-        const { data: terkait } = await supabase
+      // US-17 & US-32: Query produk terkait kategori sama
+      if (produk.kategori) {
+        let { data: terkait, error: terkaitErr } = await supabase
           .from("produk")
           .select("*")
           .eq("kategori", produk.kategori)
           .neq("aktif", false)
           .neq("id", id)
           .limit(4);
+
+        if (terkaitErr && terkaitErr.code === "42703") {
+          const res = await supabase
+            .from("produk")
+            .select("*")
+            .eq("kategori", produk.kategori)
+            .neq("id", id)
+            .limit(4);
+          terkait = res.data;
+        }
 
         produkTerkait = terkait || [];
       }

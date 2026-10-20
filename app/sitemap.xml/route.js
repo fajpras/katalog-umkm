@@ -10,11 +10,17 @@ export async function GET(request) {
   let daftarProduk = [];
   try {
     const supabase = buatKlienServer();
-    const { data } = await supabase
+    let res = await supabase
       .from("produk")
       .select("id, created_at, aktif")
       .neq("aktif", false);
-    daftarProduk = data || [];
+
+    // Fallback jika kolom aktif belum ada
+    if (res.error && res.error.code === "42703") {
+      res = await supabase.from("produk").select("id, created_at");
+    }
+
+    daftarProduk = res.data || [];
   } catch {
     // Abaikan error koneksi
   }

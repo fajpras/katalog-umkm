@@ -31,9 +31,17 @@ export default async function HalamanAdmin({ searchParams }) {
   let daftarStatKategori = [];
 
   try {
-    const { data: semuaData } = await supabase
+    let { data: semuaData, error: semuaErr } = await supabase
       .from("produk")
       .select("id, kategori, stok, tersedia, aktif");
+
+    // Fallback jika kolom aktif belum ada
+    if (semuaErr && semuaErr.code === "42703") {
+      const resFallback = await supabase
+        .from("produk")
+        .select("id, kategori, stok, tersedia");
+      semuaData = resFallback.data;
+    }
 
     if (semuaData) {
       totalProdukKeseluruhan = semuaData.length;

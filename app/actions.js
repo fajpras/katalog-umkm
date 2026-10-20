@@ -13,11 +13,21 @@ export async function ambilProdukByIds(ids = []) {
 
   try {
     const supabase = buatKlienServer();
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("produk")
       .select("*")
       .in("id", idsBersih)
       .neq("aktif", false);
+
+    // Fallback jika kolom aktif belum ada di database
+    if (error && error.code === "42703") {
+      const res = await supabase
+        .from("produk")
+        .select("*")
+        .in("id", idsBersih);
+      data = res.data;
+      error = res.error;
+    }
 
     if (error || !data) return [];
 
