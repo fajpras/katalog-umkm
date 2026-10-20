@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { toko } from "@/lib/toko";
 import SakelarTema from "@/components/SakelarTema";
+import TombolKeranjangHeader from "@/components/TombolKeranjangHeader";
 
 export default function Header() {
   return (
-    <header className="border-b border-zinc-200/80 bg-white/80 backdrop-blur-xl transition-colors dark:border-zinc-800/80 dark:bg-zinc-900/80">
+    <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/80 backdrop-blur-xl transition-colors dark:border-zinc-800/80 dark:bg-zinc-900/80">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5">
         <Link
           href="/"
@@ -12,7 +13,8 @@ export default function Header() {
         >
           {toko.nama}
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <TombolKeranjangHeader />
           <SakelarTema />
         </div>
       </div>

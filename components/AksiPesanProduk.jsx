@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { toko } from "@/lib/toko";
 import { formatRupiah } from "@/lib/format";
+import { useKeranjang } from "@/context/KeranjangContext";
 
 export default function AksiPesanProduk({ produk }) {
+  const { tambahItem } = useKeranjang();
+
   const isHabis =
     produk.tersedia === false ||
     produk.stok === 0 ||
@@ -96,8 +99,8 @@ export default function AksiPesanProduk({ produk }) {
         </div>
       </div>
 
-      {/* Tombol Pesan Desktop */}
-      <div className="pt-2">
+      {/* Tombol Pesan & Tambah ke Keranjang Desktop */}
+      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
         {isHabis ? (
           <button
             type="button"
@@ -107,19 +110,31 @@ export default function AksiPesanProduk({ produk }) {
             <span>Stok Habis — Tidak Dapat Dipesan</span>
           </button>
         ) : (
-          <a
-            href={urlWhatsApp}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 font-semibold text-white shadow-sm transition-all duration-300 hover:bg-emerald-700 hover:shadow-lg active:scale-95 dark:bg-emerald-500 dark:hover:bg-emerald-600 sm:w-auto"
-          >
-            <span>Pesan via WhatsApp ({formatRupiah(totalHarga)})</span>
-          </a>
+          <>
+            <button
+              type="button"
+              onClick={() => tambahItem(produk, varianTerpilih, jumlah)}
+              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-emerald-600 bg-emerald-50 px-5 font-semibold text-emerald-800 shadow-sm transition-all hover:bg-emerald-100 active:scale-95 dark:border-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-950"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+              </svg>
+              <span>+ Keranjang</span>
+            </button>
+            <a
+              href={urlWhatsApp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 font-semibold text-white shadow-sm transition-all duration-300 hover:bg-emerald-700 hover:shadow-lg active:scale-95 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+            >
+              <span>Pesan via WhatsApp</span>
+            </a>
+          </>
         )}
       </div>
 
       {/* Bar Pesan Lengket Mobile */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between border-t border-zinc-200/80 bg-white/95 px-5 py-3 shadow-lg backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-900/95 md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-3 border-t border-zinc-200/80 bg-white/95 px-5 py-3 shadow-lg backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-900/95 md:hidden">
         <div>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
             {isHabis ? "Status Produk" : `Total (${jumlah}x, ${varianTerpilih})`}
@@ -141,14 +156,26 @@ export default function AksiPesanProduk({ produk }) {
             Habis
           </button>
         ) : (
-          <a
-            href={urlWhatsApp}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 dark:bg-emerald-500 dark:hover:bg-emerald-600"
-          >
-            Pesan WhatsApp
-          </a>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => tambahItem(produk, varianTerpilih, jumlah)}
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-emerald-600 bg-emerald-50 text-emerald-800 active:scale-95 dark:border-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300"
+              aria-label="Tambah ke keranjang"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+              </svg>
+            </button>
+            <a
+              href={urlWhatsApp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+            >
+              Pesan WhatsApp
+            </a>
+          </div>
         )}
       </div>
     </div>
