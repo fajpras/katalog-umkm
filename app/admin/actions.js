@@ -647,3 +647,56 @@ export async function toggleAktifProduk(id, statusAktifSekarang) {
   revalidatePath("/sitemap.xml");
   return { sukses: true };
 }
+
+
+export async function toggleTampilUlasan(id, statusTampilSekarang, produkId) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  if (!id) return { error: "ID ulasan tidak valid." };
+
+  const { error } = await supabase
+    .from("ulasan")
+    .update({ tampil: !statusTampilSekarang })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message || "Gagal mengubah status tampil ulasan." };
+  }
+
+  revalidatePath("/admin/ulasan");
+  if (produkId) revalidatePath(`/produk/${produkId}`);
+  return { sukses: true };
+}
+
+export async function hapusUlasan(id, produkId) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  if (!id) return { error: "ID ulasan tidak valid." };
+
+  const { error } = await supabase.from("ulasan").delete().eq("id", id);
+  if (error) {
+    return { error: error.message || "Gagal menghapus ulasan." };
+  }
+
+  revalidatePath("/admin/ulasan");
+  if (produkId) revalidatePath(`/produk/${produkId}`);
+  return { sukses: true };
+}

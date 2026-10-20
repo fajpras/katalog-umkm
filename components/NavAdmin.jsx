@@ -17,6 +17,12 @@ export default function NavAdmin() {
         Kategori
       </Link>
       <Link
+        href="/admin/ulasan"
+        className="font-semibold text-zinc-900 transition-colors hover:text-indigo-600 dark:text-zinc-100 dark:hover:text-indigo-400"
+      >
+        Ulasan
+      </Link>
+      <Link
         href="/admin/password"
         className="font-semibold text-zinc-900 transition-colors hover:text-indigo-600 dark:text-zinc-100 dark:hover:text-indigo-400"
       >
