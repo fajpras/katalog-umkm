@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { buatKlienSesi } from "@/lib/supabase/auth";
 
 export async function login(prevState, formData) {
@@ -114,6 +115,8 @@ export async function tambahProduk(prevState, formData) {
     return { error: insertError.message || "Gagal menyimpan produk baru." };
   }
 
+  revalidatePath("/admin");
+  revalidatePath("/");
   redirect("/admin");
 }
 
@@ -165,5 +168,38 @@ export async function ubahProduk(prevState, formData) {
     return { error: updateError.message || "Gagal memperbarui data produk." };
   }
 
+  revalidatePath("/admin");
+  revalidatePath("/");
   redirect("/admin");
+}
+
+export async function hapusProduk(idOrFormData) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login. Silakan login kembali." };
+  }
+
+  const id = idOrFormData instanceof FormData ? idOrFormData.get("id") : idOrFormData;
+  if (!id) {
+    return { error: "ID produk tidak valid." };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("produk")
+    .delete()
+    .eq("id", id);
+
+  if (deleteError) {
+    return { error: deleteError.message || "Gagal menghapus produk." };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { sukses: true };
 }
