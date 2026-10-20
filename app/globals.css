@@ -6,20 +6,39 @@
   --font-display: var(--font-display), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-body), "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  /* Backward compatibility tokens mapped to design system zinc & emerald */
-  --color-latar: #ffffff;
-  --color-permukaan: #f4f4f5;
-  --color-garis: #e4e4e7;
-  --color-teks: #18181b;
-  --color-teks-lembut: #71717a;
+  --color-latar: var(--bg-latar);
+  --color-permukaan: var(--bg-permukaan);
+  --color-garis: var(--border-garis);
+  --color-teks: var(--text-teks);
+  --color-teks-lembut: var(--text-teks-lembut);
 
   --color-utama: #059669;
   --color-utama-gelap: #047857;
 
-  --color-harga: #047857;
-  --color-harga-latar: #ecfdf5;
+  --color-harga: var(--text-harga);
+  --color-harga-latar: var(--bg-harga-latar);
 
   --color-bahaya: #dc2626;
+}
+
+:root {
+  --bg-latar: #ffffff;
+  --bg-permukaan: #f4f4f5;
+  --border-garis: #e4e4e7;
+  --text-teks: #18181b;
+  --text-teks-lembut: #71717a;
+  --text-harga: #047857;
+  --bg-harga-latar: #ecfdf5;
+}
+
+.dark {
+  --bg-latar: #18181b;
+  --bg-permukaan: #27272a;
+  --border-garis: #3f3f46;
+  --text-teks: #fafafa;
+  --text-teks-lembut: #a1a1aa;
+  --text-harga: #34d399;
+  --bg-harga-latar: #064e3b;
 }
 
 html {

@@ -27,26 +27,29 @@ export default async function HalamanKatalog() {
   return (
     <>
       <section className="py-10 sm:py-14">
-        <h1 className="max-w-2xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+        <h1 className="max-w-2xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl font-[family-name:var(--font-display)] text-zinc-900 dark:text-zinc-50">
           {toko.nama}
         </h1>
-        <p className="mt-3 max-w-xl text-lg text-teks-lembut">{toko.tagline}</p>
-        <p className="mt-4 text-sm text-teks-lembut">{toko.jamBuka}</p>
+        <p className="mt-3 max-w-xl text-lg text-zinc-600 dark:text-zinc-400">{toko.tagline}</p>
+        <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-500">{toko.jamBuka}</p>
       </section>
 
       <section aria-labelledby="judul-produk" className="flex flex-col gap-5">
-        <h2 id="judul-produk" className="text-xl font-bold">
+        <h2
+          id="judul-produk"
+          className="text-xl font-bold text-zinc-900 dark:text-zinc-100 font-[family-name:var(--font-display)]"
+        >
           Produk kami
         </h2>
 
         {pesanError ? (
-          <div className="rounded-xl border border-garis bg-permukaan p-4 text-bahaya">
-            <p className="font-medium">Gagal memuat produk: {pesanError}</p>
+          <div className="rounded-2xl border border-red-200 bg-red-50/80 p-4 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+            <p className="font-semibold">Gagal memuat produk: {pesanError}</p>
           </div>
         ) : daftarProduk.length === 0 ? (
-          <p className="py-8 text-center text-teks-lembut">Belum ada produk</p>
+          <p className="py-8 text-center text-zinc-500 dark:text-zinc-400">Belum ada produk</p>
         ) : (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {daftarProduk.map((produk) => (
               <KartuProduk key={produk.id} produk={produk} />
             ))}
