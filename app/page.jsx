@@ -3,6 +3,7 @@ import KartuProduk from "@/components/KartuProduk";
 import PilihUrutan from "@/components/PilihUrutan";
 import Paginasi from "@/components/Paginasi";
 import ProdukTerakhirDilihat from "@/components/ProdukTerakhirDilihat";
+import BannerCarousel from "@/components/BannerCarousel";
 import { toko } from "@/lib/toko";
 import { buatKlienServer } from "@/lib/supabase/server";
 
@@ -19,12 +20,28 @@ export default async function HalamanKatalog({ searchParams }) {
 
   let daftarProduk = [];
   let semuaKategori = ["Semua"];
+  let daftarBanner = [];
   let totalData = 0;
   let totalHalaman = 1;
   let pesanError = null;
 
   try {
     const supabase = buatKlienServer();
+
+    // US-42: Ambil banner promo aktif (sembunyikan jika kosong/tabel belum ada)
+    try {
+      const { data: bannerData } = await supabase
+        .from("banner")
+        .select("*")
+        .eq("aktif", true)
+        .order("created_at", { ascending: false });
+
+      if (bannerData) {
+        daftarBanner = bannerData;
+      }
+    } catch {
+      // Abaikan jika tabel banner belum dibuat
+    }
 
     // Ambil daftar seluruh kategori untuk chip filter (hanya dari produk aktif, fallback jika kolom aktif belum ada)
     let dataKategori = null;
@@ -99,6 +116,11 @@ export default async function HalamanKatalog({ searchParams }) {
 
   return (
     <>
+      {/* US-42: Carousel Banner Promo Aktif (disembunyikan jika kosong) */}
+      <div className="mt-4">
+        <BannerCarousel daftarBanner={daftarBanner} />
+      </div>
+
       {/* Hero & Banner Toko */}
       <section className="relative -mx-4 mb-8 overflow-hidden rounded-b-3xl bg-gradient-to-b from-emerald-50/80 via-emerald-50/30 to-transparent px-4 py-10 dark:from-emerald-950/30 dark:via-zinc-950/10 dark:to-transparent sm:-mx-6 sm:px-6 sm:py-14">
         <div className="max-w-3xl">

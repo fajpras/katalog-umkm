@@ -700,3 +700,133 @@ export async function hapusUlasan(id, produkId) {
   if (produkId) revalidatePath(`/produk/${produkId}`);
   return { sukses: true };
 }
+
+
+export async function tambahBanner(prevState, formData) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  const data = formData instanceof FormData ? formData : prevState;
+  const judul = data?.get?.("judul")?.toString()?.trim() || "";
+  const gambar_url = data?.get?.("gambar_url")?.toString()?.trim() || "";
+  const tautan = data?.get?.("tautan")?.toString()?.trim() || "";
+
+  if (!judul) {
+    return { error: "Judul banner wajib diisi." };
+  }
+
+  if (!gambar_url) {
+    return { error: "URL gambar banner wajib diisi." };
+  }
+
+  const { error } = await supabase.from("banner").insert({
+    judul,
+    gambar_url,
+    tautan,
+    aktif: true,
+  });
+
+  if (error) {
+    return { error: error.message || "Gagal menyimpan banner promo." };
+  }
+
+  revalidatePath("/admin/banner");
+  revalidatePath("/");
+  return { sukses: "Banner promo berhasil ditambahkan." };
+}
+
+export async function ubahBanner(prevState, formData) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  const data = formData instanceof FormData ? formData : prevState;
+  const id = data?.get?.("id")?.toString();
+  const judul = data?.get?.("judul")?.toString()?.trim() || "";
+  const gambar_url = data?.get?.("gambar_url")?.toString()?.trim() || "";
+  const tautan = data?.get?.("tautan")?.toString()?.trim() || "";
+
+  if (!id || !judul || !gambar_url) {
+    return { error: "ID, judul, dan gambar banner wajib diisi." };
+  }
+
+  const { error } = await supabase
+    .from("banner")
+    .update({ judul, gambar_url, tautan })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message || "Gagal memperbarui banner promo." };
+  }
+
+  revalidatePath("/admin/banner");
+  revalidatePath("/");
+  return { sukses: "Banner promo berhasil diperbarui." };
+}
+
+export async function hapusBanner(id) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  if (!id) return { error: "ID banner tidak valid." };
+
+  const { error } = await supabase.from("banner").delete().eq("id", id);
+  if (error) {
+    return { error: error.message || "Gagal menghapus banner." };
+  }
+
+  revalidatePath("/admin/banner");
+  revalidatePath("/");
+  return { sukses: true };
+}
+
+export async function toggleAktifBanner(id, statusSekarang) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  if (!id) return { error: "ID banner tidak valid." };
+
+  const { error } = await supabase
+    .from("banner")
+    .update({ aktif: !statusSekarang })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message || "Gagal mengubah status banner." };
+  }
+
+  revalidatePath("/admin/banner");
+  revalidatePath("/");
+  return { sukses: true };
+}
