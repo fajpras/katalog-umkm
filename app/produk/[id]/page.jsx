@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AksiPesanProduk from "@/components/AksiPesanProduk";
+import KartuProduk from "@/components/KartuProduk";
 import { formatRupiah } from "@/lib/format";
 import { buatKlienServer } from "@/lib/supabase/server";
 
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function HalamanDetailProduk({ params }) {
   const { id } = await params;
   let produk = null;
+  let produkTerkait = [];
 
   try {
     const supabase = buatKlienServer();
@@ -20,6 +22,18 @@ export default async function HalamanDetailProduk({ params }) {
 
     if (!error && data) {
       produk = data;
+
+      // US-17: Query produk terkait kategori sama, kecualikan produk saat ini, limit 4
+      if (produk.kategori) {
+        const { data: terkait } = await supabase
+          .from("produk")
+          .select("*")
+          .eq("kategori", produk.kategori)
+          .neq("id", id)
+          .limit(4);
+
+        produkTerkait = terkait || [];
+      }
     }
   } catch {
     // Abaikan error koneksi
@@ -84,6 +98,37 @@ export default async function HalamanDetailProduk({ params }) {
           </div>
         </div>
       </article>
+
+      {/* US-17: Seksi Produk Terkait */}
+      {produkTerkait.length > 0 && (
+        <section aria-labelledby="judul-produk-terkait" className="mt-14 border-t border-zinc-200/80 pt-10 dark:border-zinc-800/80">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2
+                id="judul-produk-terkait"
+                className="text-xl font-bold text-zinc-900 dark:text-zinc-100 font-[family-name:var(--font-display)] sm:text-2xl"
+              >
+                Produk Terkait
+              </h2>
+              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                Pilihan lain dari kategori {produk.kategori}
+              </p>
+            </div>
+            <Link
+              href={`/?kategori=${encodeURIComponent(produk.kategori)}`}
+              className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+            >
+              Lihat semua &rarr;
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+            {produkTerkait.map((item) => (
+              <KartuProduk key={item.id} produk={item} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
