@@ -2,6 +2,7 @@ import Link from "next/link";
 import KartuProduk from "@/components/KartuProduk";
 import PilihUrutan from "@/components/PilihUrutan";
 import Paginasi from "@/components/Paginasi";
+import ProdukTerakhirDilihat from "@/components/ProdukTerakhirDilihat";
 import { toko } from "@/lib/toko";
 import { buatKlienServer } from "@/lib/supabase/server";
 
@@ -243,6 +244,9 @@ export default async function HalamanKatalog({ searchParams }) {
           </>
         )}
       </section>
+
+      {/* US-36: Widget Produk Terakhir Dilihat (disembunyikan jika kosong) */}
+      <ProdukTerakhirDilihat />
     </>
   );
 }
