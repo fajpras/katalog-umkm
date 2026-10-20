@@ -75,6 +75,68 @@ export async function gantiPassword(prevState, formData) {
   return { sukses: "Password berhasil diganti." };
 }
 
+function validasiProduk(data) {
+  const errors = {};
+  const nama = data?.get?.("nama")?.toString()?.trim() || "";
+  const hargaRaw = data?.get?.("harga")?.toString()?.trim() || "";
+  const hargaDiskonRaw = data?.get?.("harga_diskon")?.toString()?.trim() || "";
+  const kategori = data?.get?.("kategori")?.toString()?.trim() || "";
+  const stokRaw = data?.get?.("stok")?.toString()?.trim() || "";
+
+  if (!nama) {
+    errors.nama = "Nama produk wajib diisi.";
+  } else if (nama.length < 3) {
+    errors.nama = "Nama produk minimal 3 karakter.";
+  }
+
+  if (!hargaRaw) {
+    errors.harga = "Harga produk wajib diisi.";
+  } else {
+    const harga = Number(hargaRaw);
+    if (isNaN(harga) || harga <= 0) {
+      errors.harga = "Harga harus berupa angka lebih dari 0.";
+    }
+  }
+
+  if (hargaDiskonRaw) {
+    const hargaDiskon = Number(hargaDiskonRaw);
+    const harga = Number(hargaRaw);
+    if (isNaN(hargaDiskon) || hargaDiskon < 0) {
+      errors.harga_diskon = "Harga diskon harus berupa angka valid.";
+    } else if (!isNaN(harga) && hargaDiskon >= harga) {
+      errors.harga_diskon = "Harga diskon harus lebih murah dari harga normal.";
+    }
+  }
+
+  if (!kategori) {
+    errors.kategori = "Kategori wajib dipilih atau diisi.";
+  }
+
+  if (stokRaw !== "") {
+    const stok = Number(stokRaw);
+    if (isNaN(stok) || stok < 0) {
+      errors.stok = "Jumlah stok tidak boleh negatif.";
+    }
+  }
+
+  return errors;
+}
+
+function ambilNilaiForm(data) {
+  return {
+    nama: data?.get?.("nama")?.toString() || "",
+    harga: data?.get?.("harga")?.toString() || "",
+    harga_diskon: data?.get?.("harga_diskon")?.toString() || "",
+    kategori: data?.get?.("kategori")?.toString() || "",
+    label: data?.get?.("label")?.toString() || "",
+    stok: data?.get?.("stok")?.toString() || "",
+    tersedia: data?.get?.("tersedia") === "true",
+    foto_url: data?.get?.("foto_url")?.toString() || "",
+    foto_galeri: data?.get?.("foto_galeri")?.toString() || "",
+    deskripsi: data?.get?.("deskripsi")?.toString() || "",
+  };
+}
+
 export async function tambahProduk(prevState, formData) {
   // Cek sesi di baris pertama
   const supabase = await buatKlienSesi();
@@ -88,37 +150,37 @@ export async function tambahProduk(prevState, formData) {
   }
 
   const data = formData instanceof FormData ? formData : prevState;
-  const nama = data?.get?.("nama")?.toString()?.trim() || "";
-  const hargaRaw = data?.get?.("harga")?.toString()?.trim() || "";
-  const hargaDiskonRaw = data?.get?.("harga_diskon")?.toString()?.trim() || "";
-  const kategori = data?.get?.("kategori")?.toString()?.trim() || "Umum";
-  const label = data?.get?.("label")?.toString()?.trim() || null;
-  const foto_url = data?.get?.("foto_url")?.toString()?.trim() || "/produk/kopi.svg";
-  const deskripsi = data?.get?.("deskripsi")?.toString()?.trim() || "";
-  const fotoGaleriRaw = data?.get?.("foto_galeri")?.toString()?.trim() || "";
+  const errors = validasiProduk(data);
+  const values = ambilNilaiForm(data);
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      error: "Terdapat isian yang belum sesuai. Silakan periksa kembali formulir.",
+      errors,
+      values,
+    };
+  }
+
+  const nama = values.nama.trim();
+  const hargaRaw = values.harga.trim();
+  const hargaDiskonRaw = values.harga_diskon.trim();
+  const kategori = values.kategori.trim();
+  const label = values.label.trim() || null;
+  const foto_url = values.foto_url.trim() || "/produk/kopi.svg";
+  const deskripsi = values.deskripsi.trim();
+  const fotoGaleriRaw = values.foto_galeri.trim();
   const foto_galeri = fotoGaleriRaw
     ? fotoGaleriRaw
         .split(/[\n,]/)
         .map((url) => url.trim())
         .filter((url) => url.length > 0)
     : [];
-  const stokRaw = data?.get?.("stok")?.toString()?.trim() || "";
+  const stokRaw = values.stok.trim();
   const stok = stokRaw !== "" ? parseInt(stokRaw, 10) : 10;
-  const tersedia = data?.get?.("tersedia") === "true";
-
-  if (!nama) {
-    return { error: "Nama produk wajib diisi." };
-  }
+  const tersedia = values.tersedia;
 
   const harga = parseInt(hargaRaw, 10);
-  if (isNaN(harga) || harga < 0) {
-    return { error: "Harga harus berupa angka valid dan tidak boleh negatif." };
-  }
-
   const harga_diskon = hargaDiskonRaw !== "" ? parseInt(hargaDiskonRaw, 10) : null;
-  if (harga_diskon !== null && (isNaN(harga_diskon) || harga_diskon < 0)) {
-    return { error: "Harga diskon harus berupa angka valid dan tidak boleh negatif." };
-  }
 
   const payload = {
     nama,
@@ -180,41 +242,42 @@ export async function ubahProduk(prevState, formData) {
 
   const data = formData instanceof FormData ? formData : prevState;
   const id = data?.get?.("id")?.toString();
-  const nama = data?.get?.("nama")?.toString()?.trim() || "";
-  const hargaRaw = data?.get?.("harga")?.toString()?.trim() || "";
-  const hargaDiskonRaw = data?.get?.("harga_diskon")?.toString()?.trim() || "";
-  const kategori = data?.get?.("kategori")?.toString()?.trim() || "Umum";
-  const label = data?.get?.("label")?.toString()?.trim() || null;
-  const foto_url = data?.get?.("foto_url")?.toString()?.trim() || "/produk/kopi.svg";
-  const deskripsi = data?.get?.("deskripsi")?.toString()?.trim() || "";
-  const fotoGaleriRaw = data?.get?.("foto_galeri")?.toString()?.trim() || "";
+
+  if (!id) {
+    return { error: "ID produk tidak valid." };
+  }
+
+  const errors = validasiProduk(data);
+  const values = ambilNilaiForm(data);
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      error: "Terdapat isian yang belum sesuai. Silakan periksa kembali formulir.",
+      errors,
+      values: { ...values, id },
+    };
+  }
+
+  const nama = values.nama.trim();
+  const hargaRaw = values.harga.trim();
+  const hargaDiskonRaw = values.harga_diskon.trim();
+  const kategori = values.kategori.trim();
+  const label = values.label.trim() || null;
+  const foto_url = values.foto_url.trim() || "/produk/kopi.svg";
+  const deskripsi = values.deskripsi.trim();
+  const fotoGaleriRaw = values.foto_galeri.trim();
   const foto_galeri = fotoGaleriRaw
     ? fotoGaleriRaw
         .split(/[\n,]/)
         .map((url) => url.trim())
         .filter((url) => url.length > 0)
     : [];
-  const stokRaw = data?.get?.("stok")?.toString()?.trim() || "";
+  const stokRaw = values.stok.trim();
   const stok = stokRaw !== "" ? parseInt(stokRaw, 10) : 10;
-  const tersedia = data?.get?.("tersedia") === "true";
-
-  if (!id) {
-    return { error: "ID produk tidak valid." };
-  }
-
-  if (!nama) {
-    return { error: "Nama produk wajib diisi." };
-  }
+  const tersedia = values.tersedia;
 
   const harga = parseInt(hargaRaw, 10);
-  if (isNaN(harga) || harga < 0) {
-    return { error: "Harga harus berupa angka valid dan tidak boleh negatif." };
-  }
-
   const harga_diskon = hargaDiskonRaw !== "" ? parseInt(hargaDiskonRaw, 10) : null;
-  if (harga_diskon !== null && (isNaN(harga_diskon) || harga_diskon < 0)) {
-    return { error: "Harga diskon harus berupa angka valid dan tidak boleh negatif." };
-  }
 
   const payload = {
     nama,
@@ -368,7 +431,6 @@ Ketentuan:
   }
 }
 
-
 export async function uploadFoto(formData) {
   // Cek sesi di baris pertama
   const supabase = await buatKlienSesi();
@@ -438,7 +500,6 @@ export async function uploadFoto(formData) {
     return { error: `Terjadi kesalahan saat upload: ${err.message}` };
   }
 }
-
 
 export async function tambahKategori(prevState, formData) {
   // Cek sesi di baris pertama
@@ -558,7 +619,6 @@ export async function hapusKategori(id, namaKategori) {
   return { sukses: true };
 }
 
-
 export async function toggleAktifProduk(id, statusAktifSekarang) {
   // Cek sesi di baris pertama
   const supabase = await buatKlienSesi();
@@ -588,3 +648,185 @@ export async function toggleAktifProduk(id, statusAktifSekarang) {
   return { sukses: true };
 }
 
+
+export async function toggleTampilUlasan(id, statusTampilSekarang, produkId) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  if (!id) return { error: "ID ulasan tidak valid." };
+
+  const { error } = await supabase
+    .from("ulasan")
+    .update({ tampil: !statusTampilSekarang })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message || "Gagal mengubah status tampil ulasan." };
+  }
+
+  revalidatePath("/admin/ulasan");
+  if (produkId) revalidatePath(`/produk/${produkId}`);
+  return { sukses: true };
+}
+
+export async function hapusUlasan(id, produkId) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  if (!id) return { error: "ID ulasan tidak valid." };
+
+  const { error } = await supabase.from("ulasan").delete().eq("id", id);
+  if (error) {
+    return { error: error.message || "Gagal menghapus ulasan." };
+  }
+
+  revalidatePath("/admin/ulasan");
+  if (produkId) revalidatePath(`/produk/${produkId}`);
+  return { sukses: true };
+}
+
+
+export async function tambahBanner(prevState, formData) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  const data = formData instanceof FormData ? formData : prevState;
+  const judul = data?.get?.("judul")?.toString()?.trim() || "";
+  const gambar_url = data?.get?.("gambar_url")?.toString()?.trim() || "";
+  const tautan = data?.get?.("tautan")?.toString()?.trim() || "";
+
+  if (!judul) {
+    return { error: "Judul banner wajib diisi." };
+  }
+
+  if (!gambar_url) {
+    return { error: "URL gambar banner wajib diisi." };
+  }
+
+  const { error } = await supabase.from("banner").insert({
+    judul,
+    gambar_url,
+    tautan,
+    aktif: true,
+  });
+
+  if (error) {
+    return { error: error.message || "Gagal menyimpan banner promo." };
+  }
+
+  revalidatePath("/admin/banner");
+  revalidatePath("/");
+  return { sukses: "Banner promo berhasil ditambahkan." };
+}
+
+export async function ubahBanner(prevState, formData) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  const data = formData instanceof FormData ? formData : prevState;
+  const id = data?.get?.("id")?.toString();
+  const judul = data?.get?.("judul")?.toString()?.trim() || "";
+  const gambar_url = data?.get?.("gambar_url")?.toString()?.trim() || "";
+  const tautan = data?.get?.("tautan")?.toString()?.trim() || "";
+
+  if (!id || !judul || !gambar_url) {
+    return { error: "ID, judul, dan gambar banner wajib diisi." };
+  }
+
+  const { error } = await supabase
+    .from("banner")
+    .update({ judul, gambar_url, tautan })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message || "Gagal memperbarui banner promo." };
+  }
+
+  revalidatePath("/admin/banner");
+  revalidatePath("/");
+  return { sukses: "Banner promo berhasil diperbarui." };
+}
+
+export async function hapusBanner(id) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  if (!id) return { error: "ID banner tidak valid." };
+
+  const { error } = await supabase.from("banner").delete().eq("id", id);
+  if (error) {
+    return { error: error.message || "Gagal menghapus banner." };
+  }
+
+  revalidatePath("/admin/banner");
+  revalidatePath("/");
+  return { sukses: true };
+}
+
+export async function toggleAktifBanner(id, statusSekarang) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  if (!id) return { error: "ID banner tidak valid." };
+
+  const { error } = await supabase
+    .from("banner")
+    .update({ aktif: !statusSekarang })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message || "Gagal mengubah status banner." };
+  }
+
+  revalidatePath("/admin/banner");
+  revalidatePath("/");
+  return { sukses: true };
+}

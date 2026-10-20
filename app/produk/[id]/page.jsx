@@ -4,6 +4,8 @@ import AksiPesanProduk from "@/components/AksiPesanProduk";
 import GaleriProduk from "@/components/GaleriProduk";
 import KartuProduk from "@/components/KartuProduk";
 import TombolBagikan from "@/components/TombolBagikan";
+import CatatTerakhirDilihat from "@/components/CatatTerakhirDilihat";
+import SeksiUlasan from "@/components/SeksiUlasan";
 import { formatRupiah } from "@/lib/format";
 import { buatKlienServer } from "@/lib/supabase/server";
 import { toko } from "@/lib/toko";
@@ -15,11 +17,20 @@ export async function generateMetadata({ params }) {
 
   try {
     const supabase = buatKlienServer();
-    const { data: produk } = await supabase
+    let { data: produk, error: prodErr } = await supabase
       .from("produk")
       .select("nama, deskripsi, foto_url, harga, kategori, aktif")
       .eq("id", id)
       .maybeSingle();
+
+    if (prodErr && prodErr.code === "42703") {
+      const res = await supabase
+        .from("produk")
+        .select("nama, deskripsi, foto_url, harga, kategori")
+        .eq("id", id)
+        .maybeSingle();
+      produk = res.data;
+    }
 
     if (!produk || produk.aktif === false) {
       return {
@@ -66,6 +77,7 @@ export default async function HalamanDetailProduk({ params }) {
   const { id } = await params;
   let produk = null;
   let produkTerkait = [];
+  let daftarUlasan = [];
 
   try {
     const supabase = buatKlienServer();
@@ -78,9 +90,9 @@ export default async function HalamanDetailProduk({ params }) {
     if (!error && data) {
       produk = data;
 
-      // US-17 & US-32: Query produk terkait kategori sama (hanya yang aktif), kecualikan produk saat ini, limit 4
-      if (produk.kategori && produk.aktif !== false) {
-        const { data: terkait } = await supabase
+      // US-17 & US-32: Query produk terkait kategori sama
+      if (produk.kategori) {
+        let { data: terkait, error: terkaitErr } = await supabase
           .from("produk")
           .select("*")
           .eq("kategori", produk.kategori)
@@ -88,7 +100,33 @@ export default async function HalamanDetailProduk({ params }) {
           .neq("id", id)
           .limit(4);
 
+        if (terkaitErr && terkaitErr.code === "42703") {
+          const res = await supabase
+            .from("produk")
+            .select("*")
+            .eq("kategori", produk.kategori)
+            .neq("id", id)
+            .limit(4);
+          terkait = res.data;
+        }
+
         produkTerkait = terkait || [];
+      }
+
+      // US-38: Query ulasan yang tampil untuk produk ini
+      try {
+        const { data: ulasanData } = await supabase
+          .from("ulasan")
+          .select("*")
+          .eq("produk_id", id)
+          .eq("tampil", true)
+          .order("created_at", { ascending: false });
+
+        if (ulasanData) {
+          daftarUlasan = ulasanData;
+        }
+      } catch {
+        // Abaikan jika tabel ulasan belum dibuat
       }
     }
   } catch {
@@ -113,6 +151,9 @@ export default async function HalamanDetailProduk({ params }) {
 
   return (
     <div className="pb-24 pt-4 md:pb-12">
+      {/* US-36: Catat ID produk ke LocalStorage (maks 8) */}
+      <CatatTerakhirDilihat id={produk.id} />
+
       {/* Breadcrumb & Tombol Bagikan */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
@@ -193,6 +234,9 @@ export default async function HalamanDetailProduk({ params }) {
         </div>
       </article>
 
+      {/* US-38: Ulasan & Rating Produk */}
+      <SeksiUlasan produkId={produk.id} daftarUlasan={daftarUlasan} />
+
       {/* US-17: Seksi Produk Terkait */}
       {produkTerkait.length > 0 && (
         <section aria-labelledby="judul-produk-terkait" className="mt-14 border-t border-zinc-200/80 pt-10 dark:border-zinc-800/80">
@@ -226,4 +270,3 @@ export default async function HalamanDetailProduk({ params }) {
     </div>
   );
 }
-

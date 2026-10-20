@@ -31,6 +31,18 @@ export default function AksiPesanProduk({ produk }) {
   const teksPesan = `Halo, saya ingin memesan *${produk.nama}* (Varian: ${varianTerpilih}, Jumlah: ${jumlah}) seharga total ${formatRupiah(totalHarga)}.`;
   const urlWhatsApp = `https://wa.me/${nomor}?text=${encodeURIComponent(teksPesan)}`;
 
+  // US-40: Catat log klik WhatsApp secara asinkron tanpa menahan navigasi
+  const handleKlikWA = () => {
+    try {
+      fetch("/api/log-klik", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ produk_id: produk.id }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {}
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Pilihan Varian */}
@@ -99,22 +111,22 @@ export default function AksiPesanProduk({ produk }) {
         </div>
       </div>
 
-      {/* Tombol Pesan & Tambah ke Keranjang Desktop */}
-      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
+      {/* Tombol Aksi */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         {isHabis ? (
           <button
             type="button"
             disabled
-            className="inline-flex h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-100 px-6 font-semibold text-zinc-400 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-500 sm:w-auto"
+            className="flex h-12 flex-1 cursor-not-allowed items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 font-semibold text-zinc-400 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-500"
           >
-            <span>Stok Habis — Tidak Dapat Dipesan</span>
+            Stok Sedang Habis
           </button>
         ) : (
           <>
             <button
               type="button"
               onClick={() => tambahItem(produk, varianTerpilih, jumlah)}
-              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-emerald-600 bg-emerald-50 px-5 font-semibold text-emerald-800 shadow-sm transition-all hover:bg-emerald-100 active:scale-95 dark:border-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-950"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border-2 border-emerald-600 bg-emerald-50 px-5 font-bold text-emerald-800 transition-all duration-300 hover:bg-emerald-100 active:scale-95 dark:border-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-200 dark:hover:bg-emerald-900/60"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
@@ -125,6 +137,7 @@ export default function AksiPesanProduk({ produk }) {
               href={urlWhatsApp}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={handleKlikWA}
               className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 font-semibold text-white shadow-sm transition-all duration-300 hover:bg-emerald-700 hover:shadow-lg active:scale-95 dark:bg-emerald-500 dark:hover:bg-emerald-600"
             >
               <span>Pesan via WhatsApp</span>
@@ -171,6 +184,7 @@ export default function AksiPesanProduk({ produk }) {
               href={urlWhatsApp}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={handleKlikWA}
               className="inline-flex h-11 items-center justify-center rounded-2xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 dark:bg-emerald-500 dark:hover:bg-emerald-600"
             >
               Pesan WhatsApp
