@@ -80,6 +80,34 @@ export default function FormProduk({ produk = {}, labelTombol = "Simpan produk",
         placeholder="Contoh: Minuman, Camilan, Kerajinan"
       />
 
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Input
+          label="Jumlah stok"
+          name="stok"
+          type="number"
+          min="0"
+          defaultValue={produk.stok !== undefined && produk.stok !== null ? produk.stok : 10}
+          placeholder="Contoh: 10 (isi 0 jika habis)"
+        />
+        <div className="flex flex-col gap-1.5 justify-center sm:pt-6">
+          <label className="flex items-center gap-3 cursor-pointer select-none rounded-2xl border border-zinc-200/80 bg-white px-4 py-2.5 dark:border-zinc-800/80 dark:bg-zinc-900">
+            <input
+              type="checkbox"
+              name="tersedia"
+              value="true"
+              defaultChecked={
+                produk.tersedia !== false &&
+                (produk.stok === undefined || produk.stok === null || Number(produk.stok) > 0)
+              }
+              className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800"
+            />
+            <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+              Tersedia untuk dipesan
+            </span>
+          </label>
+        </div>
+      </div>
+
       <Input
         label="Link foto utama"
         name="foto_url"

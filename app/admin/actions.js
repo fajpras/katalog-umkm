@@ -100,6 +100,9 @@ export async function tambahProduk(prevState, formData) {
         .map((url) => url.trim())
         .filter((url) => url.length > 0)
     : [];
+  const stokRaw = data?.get?.("stok")?.toString()?.trim() || "";
+  const stok = stokRaw !== "" ? parseInt(stokRaw, 10) : 10;
+  const tersedia = data?.get?.("tersedia") === "true";
 
   if (!nama) {
     return { error: "Nama produk wajib diisi." };
@@ -117,15 +120,32 @@ export async function tambahProduk(prevState, formData) {
     foto_url,
     deskripsi,
     foto_galeri,
+    stok: isNaN(stok) ? 0 : stok,
+    tersedia,
   };
 
-  let { error: insertError } = await supabase.from("produk").insert(payload);
-
-  // Jika kolom foto_galeri belum ada di database, coba simpan tanpa foto_galeri
-  if (insertError && (insertError.code === "42703" || insertError.message?.includes("foto_galeri"))) {
-    delete payload.foto_galeri;
-    const res = await supabase.from("produk").insert(payload);
+  let p = { ...payload };
+  let insertError = null;
+  while (true) {
+    const res = await supabase.from("produk").insert(p);
+    if (!res.error) {
+      insertError = null;
+      break;
+    }
     insertError = res.error;
+    if (res.error.code === "42703") {
+      const msg = res.error.message || "";
+      let stripped = false;
+      for (const col of ["foto_galeri", "stok", "tersedia"]) {
+        if (msg.includes(col) && p[col] !== undefined) {
+          delete p[col];
+          stripped = true;
+          break;
+        }
+      }
+      if (stripped) continue;
+    }
+    break;
   }
 
   if (insertError) {
@@ -163,6 +183,9 @@ export async function ubahProduk(prevState, formData) {
         .map((url) => url.trim())
         .filter((url) => url.length > 0)
     : [];
+  const stokRaw = data?.get?.("stok")?.toString()?.trim() || "";
+  const stok = stokRaw !== "" ? parseInt(stokRaw, 10) : 10;
+  const tersedia = data?.get?.("tersedia") === "true";
 
   if (!id) {
     return { error: "ID produk tidak valid." };
@@ -184,18 +207,32 @@ export async function ubahProduk(prevState, formData) {
     foto_url,
     deskripsi,
     foto_galeri,
+    stok: isNaN(stok) ? 0 : stok,
+    tersedia,
   };
 
-  let { error: updateError } = await supabase
-    .from("produk")
-    .update(payload)
-    .eq("id", id);
-
-  // Jika kolom foto_galeri belum ada di database, coba update tanpa foto_galeri
-  if (updateError && (updateError.code === "42703" || updateError.message?.includes("foto_galeri"))) {
-    delete payload.foto_galeri;
-    const res = await supabase.from("produk").update(payload).eq("id", id);
+  let p = { ...payload };
+  let updateError = null;
+  while (true) {
+    const res = await supabase.from("produk").update(p).eq("id", id);
+    if (!res.error) {
+      updateError = null;
+      break;
+    }
     updateError = res.error;
+    if (res.error.code === "42703") {
+      const msg = res.error.message || "";
+      let stripped = false;
+      for (const col of ["foto_galeri", "stok", "tersedia"]) {
+        if (msg.includes(col) && p[col] !== undefined) {
+          delete p[col];
+          stripped = true;
+          break;
+        }
+      }
+      if (stripped) continue;
+    }
+    break;
   }
 
   if (updateError) {

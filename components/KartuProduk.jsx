@@ -2,6 +2,11 @@ import Link from "next/link";
 import { formatRupiah } from "@/lib/format";
 
 export default function KartuProduk({ produk }) {
+  const isHabis =
+    produk.tersedia === false ||
+    produk.stok === 0 ||
+    (produk.stok !== undefined && produk.stok !== null && Number(produk.stok) <= 0);
+
   return (
     <Link
       href={`/produk/${produk.id}`}
@@ -11,13 +16,22 @@ export default function KartuProduk({ produk }) {
         <img
           src={produk.foto_url}
           alt={produk.nama}
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105 dark:brightness-95"
+          className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 dark:brightness-95 ${
+            isHabis ? "grayscale opacity-75" : ""
+          }`}
         />
-        {produk.kategori && (
-          <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-semibold text-zinc-700 shadow-sm backdrop-blur-sm dark:bg-zinc-900/90 dark:text-zinc-200">
-            {produk.kategori}
-          </span>
-        )}
+        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+          {produk.kategori && (
+            <span className="rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-semibold text-zinc-700 shadow-sm backdrop-blur-sm dark:bg-zinc-900/90 dark:text-zinc-200">
+              {produk.kategori}
+            </span>
+          )}
+          {isHabis && (
+            <span className="rounded-full bg-rose-600 px-2.5 py-0.5 text-xs font-bold text-white shadow-sm dark:bg-rose-500">
+              Habis
+            </span>
+          )}
+        </div>
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">

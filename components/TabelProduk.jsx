@@ -99,9 +99,25 @@ export default function TabelProduk({ daftarProduk = [] }) {
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     </div>
-                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                      {produk.nama}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        {produk.nama}
+                      </span>
+                      {produk.tersedia === false ||
+                      produk.stok === 0 ||
+                      (produk.stok !== undefined && produk.stok !== null && Number(produk.stok) <= 0) ? (
+                        <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">
+                          Stok Habis
+                        </span>
+                      ) : (
+                        produk.stok !== undefined &&
+                        produk.stok !== null && (
+                          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                            Stok: {produk.stok}
+                          </span>
+                        )
+                      )}
+                    </div>
                   </div>
                 </td>
                 <td className="px-5 py-3.5">

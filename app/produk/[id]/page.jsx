@@ -44,6 +44,11 @@ export default async function HalamanDetailProduk({ params }) {
     notFound();
   }
 
+  const isHabis =
+    produk.tersedia === false ||
+    produk.stok === 0 ||
+    (produk.stok !== undefined && produk.stok !== null && Number(produk.stok) <= 0);
+
   return (
     <div className="pb-24 pt-4 md:pb-12">
       {/* Breadcrumb */}
@@ -70,9 +75,16 @@ export default async function HalamanDetailProduk({ params }) {
         {/* Kolom Informasi & Aksi Pemesanan */}
         <div className="flex flex-col gap-6">
           <div>
-            <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-              {produk.kategori || "Umum"}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                {produk.kategori || "Umum"}
+              </span>
+              {isHabis && (
+                <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                  Stok Habis
+                </span>
+              )}
+            </div>
             <h1 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight text-zinc-900 dark:text-zinc-50 font-[family-name:var(--font-display)] sm:text-4xl">
               {produk.nama}
             </h1>
