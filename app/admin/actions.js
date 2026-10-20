@@ -93,6 +93,13 @@ export async function tambahProduk(prevState, formData) {
   const kategori = data?.get?.("kategori")?.toString()?.trim() || "Umum";
   const foto_url = data?.get?.("foto_url")?.toString()?.trim() || "/produk/kopi.svg";
   const deskripsi = data?.get?.("deskripsi")?.toString()?.trim() || "";
+  const fotoGaleriRaw = data?.get?.("foto_galeri")?.toString()?.trim() || "";
+  const foto_galeri = fotoGaleriRaw
+    ? fotoGaleriRaw
+        .split(/[\n,]/)
+        .map((url) => url.trim())
+        .filter((url) => url.length > 0)
+    : [];
 
   if (!nama) {
     return { error: "Nama produk wajib diisi." };
@@ -103,13 +110,23 @@ export async function tambahProduk(prevState, formData) {
     return { error: "Harga harus berupa angka valid dan tidak boleh negatif." };
   }
 
-  const { error: insertError } = await supabase.from("produk").insert({
+  const payload = {
     nama,
     harga,
     kategori,
     foto_url,
     deskripsi,
-  });
+    foto_galeri,
+  };
+
+  let { error: insertError } = await supabase.from("produk").insert(payload);
+
+  // Jika kolom foto_galeri belum ada di database, coba simpan tanpa foto_galeri
+  if (insertError && (insertError.code === "42703" || insertError.message?.includes("foto_galeri"))) {
+    delete payload.foto_galeri;
+    const res = await supabase.from("produk").insert(payload);
+    insertError = res.error;
+  }
 
   if (insertError) {
     return { error: insertError.message || "Gagal menyimpan produk baru." };
@@ -139,6 +156,13 @@ export async function ubahProduk(prevState, formData) {
   const kategori = data?.get?.("kategori")?.toString()?.trim() || "Umum";
   const foto_url = data?.get?.("foto_url")?.toString()?.trim() || "/produk/kopi.svg";
   const deskripsi = data?.get?.("deskripsi")?.toString()?.trim() || "";
+  const fotoGaleriRaw = data?.get?.("foto_galeri")?.toString()?.trim() || "";
+  const foto_galeri = fotoGaleriRaw
+    ? fotoGaleriRaw
+        .split(/[\n,]/)
+        .map((url) => url.trim())
+        .filter((url) => url.length > 0)
+    : [];
 
   if (!id) {
     return { error: "ID produk tidak valid." };
@@ -153,16 +177,26 @@ export async function ubahProduk(prevState, formData) {
     return { error: "Harga harus berupa angka valid dan tidak boleh negatif." };
   }
 
-  const { error: updateError } = await supabase
+  const payload = {
+    nama,
+    harga,
+    kategori,
+    foto_url,
+    deskripsi,
+    foto_galeri,
+  };
+
+  let { error: updateError } = await supabase
     .from("produk")
-    .update({
-      nama,
-      harga,
-      kategori,
-      foto_url,
-      deskripsi,
-    })
+    .update(payload)
     .eq("id", id);
+
+  // Jika kolom foto_galeri belum ada di database, coba update tanpa foto_galeri
+  if (updateError && (updateError.code === "42703" || updateError.message?.includes("foto_galeri"))) {
+    delete payload.foto_galeri;
+    const res = await supabase.from("produk").update(payload).eq("id", id);
+    updateError = res.error;
+  }
 
   if (updateError) {
     return { error: updateError.message || "Gagal memperbarui data produk." };

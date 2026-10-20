@@ -81,11 +81,31 @@ export default function FormProduk({ produk = {}, labelTombol = "Simpan produk",
       />
 
       <Input
-        label="Link foto"
+        label="Link foto utama"
         name="foto_url"
         placeholder="https://... atau /produk/kopi.svg"
         defaultValue={produk.foto_url || ""}
       />
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+          Foto galeri tambahan (opsional)
+        </label>
+        <textarea
+          name="foto_galeri"
+          rows={2}
+          defaultValue={
+            Array.isArray(produk.foto_galeri)
+              ? produk.foto_galeri.join("\n")
+              : (produk.foto_galeri || "")
+          }
+          placeholder="Tulis satu link per baris atau pisahkan dengan koma&#10;Contoh: /produk/keripik.svg, /produk/sambal.svg"
+          className="w-full rounded-2xl border border-zinc-200/80 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-800/80 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-indigo-400"
+        />
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Foto-foto ini akan muncul sebagai galeri thumbnail interaktif di halaman detail produk.
+        </p>
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">

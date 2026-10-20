@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AksiPesanProduk from "@/components/AksiPesanProduk";
+import GaleriProduk from "@/components/GaleriProduk";
 import KartuProduk from "@/components/KartuProduk";
 import { formatRupiah } from "@/lib/format";
 import { buatKlienServer } from "@/lib/supabase/server";
@@ -57,15 +58,13 @@ export default async function HalamanDetailProduk({ params }) {
       </nav>
 
       <article className="grid gap-8 lg:grid-cols-2 lg:gap-12">
-        {/* Kolom Foto Produk Lengket di Desktop */}
+        {/* Kolom Foto & Galeri Produk Lengket di Desktop */}
         <div className="lg:sticky lg:top-24 self-start">
-          <div className="relative aspect-square w-full overflow-hidden rounded-3xl border border-zinc-200/80 bg-zinc-100 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900">
-            <img
-              src={produk.foto_url || "/produk/kopi.svg"}
-              alt={produk.nama}
-              className="h-full w-full object-cover dark:brightness-95"
-            />
-          </div>
+          <GaleriProduk
+            fotoUtama={produk.foto_url}
+            fotoGaleri={produk.foto_galeri}
+            nama={produk.nama}
+          />
         </div>
 
         {/* Kolom Informasi & Aksi Pemesanan */}
