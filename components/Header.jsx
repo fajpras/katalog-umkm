@@ -13,7 +13,13 @@ export default function Header() {
         >
           {toko.nama}
         </Link>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/tentang"
+            className="text-xs sm:text-sm font-semibold text-zinc-600 transition-colors hover:text-emerald-600 dark:text-zinc-400 dark:hover:text-emerald-400"
+          >
+            Tentang
+          </Link>
           <TombolKeranjangHeader />
           <SakelarTema />
         </div>
