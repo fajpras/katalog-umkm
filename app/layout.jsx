@@ -19,6 +19,11 @@ const inter = Inter({
 export const metadata = {
   title: toko.nama,
   description: toko.tagline,
+  manifest: "/manifest.json",
+};
+
+export const viewport = {
+  themeColor: "#059669",
 };
 
 export default function RootLayout({ children }) {
@@ -29,6 +34,8 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#059669" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('tema');var s=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&s)||(t==='system'&&s)){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})()`,
