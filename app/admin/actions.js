@@ -236,8 +236,9 @@ Ketentuan:
 - Tonjolkan rasa/kualitas bahan, keunikan, atau manfaat produk.
 - Gunakan bahasa Indonesia yang baik, santun, dan menggugah selera/minat.`;
 
+    const model = "gemini-3.8-flash";
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: {
@@ -263,13 +264,16 @@ Ketentuan:
     }
 
     const data = await response.json();
-    const hasil = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
-    if (!hasil) {
+    if (!rawText) {
       return { error: "AI tidak menghasilkan teks deskripsi." };
     }
 
-    return { deskripsi: hasil };
+    // Bersihkan tanda petik di awal/akhir jika ada
+    const deskripsi = rawText.replace(/^["']|["']$/g, "").trim();
+
+    return { deskripsi };
   } catch (err) {
     return { error: `Gagal memanggil Gemini AI: ${err.message}` };
   }
