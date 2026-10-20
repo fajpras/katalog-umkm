@@ -6,9 +6,8 @@
 /out/
 
 # file rahasia: JANGAN di-commit
-.env
-.env.local
-.env*.local
+.env*
+!.env.example
 
 # lain-lain
 .DS_Store
