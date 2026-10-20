@@ -5,6 +5,7 @@ import GaleriProduk from "@/components/GaleriProduk";
 import KartuProduk from "@/components/KartuProduk";
 import TombolBagikan from "@/components/TombolBagikan";
 import CatatTerakhirDilihat from "@/components/CatatTerakhirDilihat";
+import SeksiUlasan from "@/components/SeksiUlasan";
 import { formatRupiah } from "@/lib/format";
 import { buatKlienServer } from "@/lib/supabase/server";
 import { toko } from "@/lib/toko";
@@ -67,6 +68,7 @@ export default async function HalamanDetailProduk({ params }) {
   const { id } = await params;
   let produk = null;
   let produkTerkait = [];
+  let daftarUlasan = [];
 
   try {
     const supabase = buatKlienServer();
@@ -90,6 +92,22 @@ export default async function HalamanDetailProduk({ params }) {
           .limit(4);
 
         produkTerkait = terkait || [];
+      }
+
+      // US-38: Query ulasan yang tampil untuk produk ini
+      try {
+        const { data: ulasanData } = await supabase
+          .from("ulasan")
+          .select("*")
+          .eq("produk_id", id)
+          .eq("tampil", true)
+          .order("created_at", { ascending: false });
+
+        if (ulasanData) {
+          daftarUlasan = ulasanData;
+        }
+      } catch {
+        // Abaikan jika tabel ulasan belum dibuat
       }
     }
   } catch {
@@ -196,6 +214,9 @@ export default async function HalamanDetailProduk({ params }) {
           </div>
         </div>
       </article>
+
+      {/* US-38: Ulasan & Rating Produk */}
+      <SeksiUlasan produkId={produk.id} daftarUlasan={daftarUlasan} />
 
       {/* US-17: Seksi Produk Terkait */}
       {produkTerkait.length > 0 && (
