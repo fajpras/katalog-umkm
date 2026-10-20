@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import AksiPesanProduk from "@/components/AksiPesanProduk";
 import GaleriProduk from "@/components/GaleriProduk";
 import KartuProduk from "@/components/KartuProduk";
+import TombolBagikan from "@/components/TombolBagikan";
 import { formatRupiah } from "@/lib/format";
 import { buatKlienServer } from "@/lib/supabase/server";
 
@@ -57,16 +58,19 @@ export default async function HalamanDetailProduk({ params }) {
 
   return (
     <div className="pb-24 pt-4 md:pb-12">
-      {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-        <Link href="/" className="hover:text-emerald-600 dark:hover:text-emerald-400">
-          Beranda
-        </Link>
-        <span>/</span>
-        <span className="text-zinc-400 dark:text-zinc-600">{produk.kategori || "Produk"}</span>
-        <span>/</span>
-        <span className="font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-1">{produk.nama}</span>
-      </nav>
+      {/* Breadcrumb & Tombol Bagikan */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+          <Link href="/" className="hover:text-emerald-600 dark:hover:text-emerald-400">
+            Beranda
+          </Link>
+          <span>/</span>
+          <span className="text-zinc-400 dark:text-zinc-600">{produk.kategori || "Produk"}</span>
+          <span>/</span>
+          <span className="font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-1">{produk.nama}</span>
+        </nav>
+        <TombolBagikan nama={produk.nama} deskripsi={produk.deskripsi} />
+      </div>
 
       <article className="grid gap-8 lg:grid-cols-2 lg:gap-12">
         {/* Kolom Foto & Galeri Produk Lengket di Desktop */}
