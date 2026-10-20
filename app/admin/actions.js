@@ -367,3 +367,224 @@ Ketentuan:
     return { error: `Gagal memanggil Gemini AI: ${err.message}` };
   }
 }
+
+
+export async function uploadFoto(formData) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login. Silakan login kembali." };
+  }
+
+  const file = formData?.get?.("file");
+  if (!file || typeof file === "string" || !file.name) {
+    return { error: "File tidak ditemukan atau belum dipilih." };
+  }
+
+  // 1. Validasi Ukuran (Maks 2 MB)
+  const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+  if (file.size > MAX_SIZE) {
+    return { error: `Ukuran file terlalu besar (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maksimal ukuran file adalah 2 MB.` };
+  }
+
+  // 2. Validasi Ekstensi & MIME Type (hanya jpg, png, webp)
+  const namaAsli = file.name.toLowerCase();
+  const ekstensiDiizinkan = [".jpg", ".jpeg", ".png", ".webp"];
+  const mimeDiizinkan = ["image/jpeg", "image/png", "image/webp"];
+
+  const ekstensiValid = ekstensiDiizinkan.some((ext) => namaAsli.endsWith(ext));
+  const mimeValid = mimeDiizinkan.includes(file.type);
+
+  if (!ekstensiValid || !mimeValid) {
+    return {
+      error: "Tipe file tidak valid. Hanya file gambar (.jpg, .jpeg, .png, .webp) yang diperbolehkan.",
+    };
+  }
+
+  // 3. Nama file acak
+  const ekstensi = namaAsli.split(".").pop();
+  const namaAcak = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ekstensi}`;
+  const pathUpload = `${namaAcak}`;
+
+  // 4. Konversi ke Buffer & Upload ke Storage Bucket "produk"
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const { error: uploadError } = await supabase.storage
+      .from("produk")
+      .upload(pathUpload, buffer, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      return {
+        error: `Gagal mengunggah file ke Supabase Storage: ${uploadError.message}`,
+      };
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("produk")
+      .getPublicUrl(pathUpload);
+
+    return { url: urlData.publicUrl };
+  } catch (err) {
+    return { error: `Terjadi kesalahan saat upload: ${err.message}` };
+  }
+}
+
+
+export async function tambahKategori(prevState, formData) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  const data = formData instanceof FormData ? formData : prevState;
+  const nama = data?.get?.("nama")?.toString()?.trim() || "";
+
+  if (!nama) {
+    return { error: "Nama kategori wajib diisi." };
+  }
+
+  const { error } = await supabase.from("kategori").insert({ nama });
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "Kategori dengan nama tersebut sudah ada." };
+    }
+    return { error: error.message || "Gagal menambahkan kategori." };
+  }
+
+  revalidatePath("/admin/kategori");
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { sukses: "Kategori baru berhasil ditambahkan." };
+}
+
+export async function ubahKategori(prevState, formData) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  const data = formData instanceof FormData ? formData : prevState;
+  const id = data?.get?.("id")?.toString();
+  const namaBaru = data?.get?.("nama")?.toString()?.trim() || "";
+  const namaLama = data?.get?.("nama_lama")?.toString()?.trim() || "";
+
+  if (!id || !namaBaru) {
+    return { error: "Nama kategori wajib diisi." };
+  }
+
+  const { error } = await supabase
+    .from("kategori")
+    .update({ nama: namaBaru })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message || "Gagal mengubah nama kategori." };
+  }
+
+  // Update nama kategori di seluruh produk terkait jika nama berubah
+  if (namaLama && namaLama !== namaBaru) {
+    await supabase
+      .from("produk")
+      .update({ kategori: namaBaru })
+      .eq("kategori", namaLama);
+  }
+
+  revalidatePath("/admin/kategori");
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { sukses: "Kategori berhasil diperbarui." };
+}
+
+export async function hapusKategori(id, namaKategori) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  if (!id) {
+    return { error: "ID kategori tidak valid." };
+  }
+
+  // Cek apakah ada produk yang masih memakai kategori ini
+  if (namaKategori) {
+    const { count, error: countErr } = await supabase
+      .from("produk")
+      .select("id", { count: "exact", head: true })
+      .eq("kategori", namaKategori);
+
+    if (!countErr && count > 0) {
+      return {
+        error: `Kategori "${namaKategori}" tidak dapat dihapus karena masih digunakan oleh ${count} produk. Ubah atau hapus produk terkait terlebih dahulu.`,
+      };
+    }
+  }
+
+  const { error } = await supabase.from("kategori").delete().eq("id", id);
+  if (error) {
+    return { error: error.message || "Gagal menghapus kategori." };
+  }
+
+  revalidatePath("/admin/kategori");
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { sukses: true };
+}
+
+
+export async function toggleAktifProduk(id, statusAktifSekarang) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  if (!id) return { error: "ID produk tidak valid." };
+
+  const { error } = await supabase
+    .from("produk")
+    .update({ aktif: !statusAktifSekarang })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message || "Gagal mengubah status aktif produk." };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  revalidatePath("/sitemap.xml");
+  return { sukses: true };
+}
+

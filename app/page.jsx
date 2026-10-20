@@ -25,15 +25,22 @@ export default async function HalamanKatalog({ searchParams }) {
   try {
     const supabase = buatKlienServer();
 
-    // Ambil daftar seluruh kategori untuk chip filter
-    const { data: dataKategori } = await supabase.from("produk").select("kategori");
+    // Ambil daftar seluruh kategori untuk chip filter (hanya dari produk aktif)
+    const { data: dataKategori } = await supabase
+      .from("produk")
+      .select("kategori")
+      .neq("aktif", false);
+
     if (dataKategori) {
       const kategoriSet = new Set(dataKategori.map((p) => p.kategori).filter(Boolean));
       semuaKategori = ["Semua", ...Array.from(kategoriSet)];
     }
 
-    // Bangun query produk dengan filter, urutan, dan range paginasi
-    let query = supabase.from("produk").select("*", { count: "exact" });
+    // Bangun query produk dengan filter, urutan, dan range paginasi (hanya produk aktif)
+    let query = supabase
+      .from("produk")
+      .select("*", { count: "exact" })
+      .neq("aktif", false);
 
     if (q) {
       query = query.ilike("nama", `%${q}%`);
@@ -239,3 +246,4 @@ export default async function HalamanKatalog({ searchParams }) {
     </>
   );
 }
+

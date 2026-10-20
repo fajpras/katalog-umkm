@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { formatRupiah } from "@/lib/format";
 import Tombol from "@/components/Tombol";
-import { hapusProduk } from "@/app/admin/actions";
+import { hapusProduk, toggleAktifProduk } from "@/app/admin/actions";
 
 export default function TabelProduk({ daftarProduk = [] }) {
   const [produkHapus, setProdukHapus] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [errorHapus, setErrorHapus] = useState(null);
+  const [loadingToggleId, setLoadingToggleId] = useState(null);
 
   // Tutup modal jika tombol Escape ditekan
   useEffect(() => {
@@ -38,6 +39,12 @@ export default function TabelProduk({ daftarProduk = [] }) {
     }
   };
 
+  const handleToggleAktif = async (id, statusAktifSekarang) => {
+    setLoadingToggleId(id);
+    await toggleAktifProduk(id, statusAktifSekarang);
+    setLoadingToggleId(null);
+  };
+
   if (!daftarProduk || daftarProduk.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-zinc-200/80 bg-zinc-50/50 px-6 py-14 text-center dark:border-zinc-800/80 dark:bg-zinc-900/30">
@@ -60,12 +67,12 @@ export default function TabelProduk({ daftarProduk = [] }) {
         <h3 className="mt-4 text-base font-semibold text-zinc-900 dark:text-zinc-100">
           Belum ada produk
         </h3>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Mulai tambahkan produk pertamamu untuk ditampilkan di katalog pengunjung.
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          Mulai tambahkan produk pertamamu untuk menampilkannya di katalog.
         </p>
-        <div className="mt-5">
+        <div className="mt-6">
           <Tombol href="/admin/produk/baru" varian="admin">
-            + Tambah Produk Pertama
+            + Tambah Produk Baru
           </Tombol>
         </div>
       </div>
@@ -74,76 +81,114 @@ export default function TabelProduk({ daftarProduk = [] }) {
 
   return (
     <>
-      <div className="overflow-x-auto rounded-2xl border border-zinc-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:border-zinc-800/80 dark:bg-zinc-900/50">
-        <table className="w-full min-w-[560px] text-left text-sm">
-          <thead className="border-b border-zinc-200/80 bg-zinc-50/70 text-zinc-500 dark:border-zinc-800/80 dark:bg-zinc-800/40 dark:text-zinc-400">
+      <div className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900">
+        <table className="w-full text-left text-sm">
+          <thead className="border-b border-zinc-200/80 bg-zinc-50/60 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:border-zinc-800/80 dark:bg-zinc-800/40 dark:text-zinc-400">
             <tr>
               <th className="px-5 py-3.5 font-semibold">Produk</th>
               <th className="px-5 py-3.5 font-semibold">Kategori</th>
               <th className="px-5 py-3.5 font-semibold">Harga</th>
+              <th className="px-5 py-3.5 font-semibold">Status</th>
               <th className="px-5 py-3.5 text-right font-semibold">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
-            {daftarProduk.map((produk) => (
-              <tr
-                key={produk.id}
-                className="group transition-colors hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30"
-              >
-                <td className="px-5 py-3.5">
-                  <div className="flex items-center gap-3.5">
-                    <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-zinc-200/80 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800">
-                      <img
-                        src={produk.foto_url || "/produk/kopi.svg"}
-                        alt={produk.nama}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        {produk.nama}
-                      </span>
-                      {produk.tersedia === false ||
-                      produk.stok === 0 ||
-                      (produk.stok !== undefined && produk.stok !== null && Number(produk.stok) <= 0) ? (
-                        <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">
-                          Stok Habis
+            {daftarProduk.map((produk) => {
+              const isAktif = produk.aktif !== false;
+              const isHabis =
+                produk.tersedia === false ||
+                produk.stok === 0 ||
+                (produk.stok !== undefined && produk.stok !== null && Number(produk.stok) <= 0);
+
+              return (
+                <tr
+                  key={produk.id}
+                  className={`group transition-all hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 ${
+                    !isAktif ? "opacity-60 hover:opacity-100" : ""
+                  }`}
+                >
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-3.5">
+                      <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-zinc-200/80 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800">
+                        <img
+                          src={produk.foto_url || "/produk/kopi.svg"}
+                          alt={produk.nama}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                          {produk.nama}
                         </span>
-                      ) : (
-                        produk.stok !== undefined &&
-                        produk.stok !== null && (
-                          <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                            Stok: {produk.stok}
+                        {isHabis ? (
+                          <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">
+                            Stok Habis
                           </span>
-                        )
-                      )}
+                        ) : (
+                          produk.stok !== undefined &&
+                          produk.stok !== null && (
+                            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                              Stok: {produk.stok}
+                            </span>
+                          )
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-5 py-3.5">
-                  <span className="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                    {produk.kategori || "Umum"}
-                  </span>
-                </td>
-                <td className="px-5 py-3.5 font-medium text-zinc-900 dark:text-zinc-100">
-                  {formatRupiah(produk.harga)}
-                </td>
-                <td className="px-5 py-3.5 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <Tombol href={`/admin/produk/${produk.id}/ubah`} varian="garis">
-                      Ubah
-                    </Tombol>
-                    <Tombol
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <span className="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                      {produk.kategori || "Umum"}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3.5 font-medium text-zinc-900 dark:text-zinc-100">
+                    {formatRupiah(produk.harga)}
+                  </td>
+                  {/* Sakelar Aktif/Nonaktif */}
+                  <td className="px-5 py-3.5">
+                    <button
                       type="button"
-                      varian="bahaya"
-                      onClick={() => setProdukHapus(produk)}
+                      onClick={() => handleToggleAktif(produk.id, isAktif)}
+                      disabled={loadingToggleId === produk.id}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all active:scale-95 ${
+                        isAktif
+                          ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:bg-emerald-900"
+                          : "bg-zinc-200 text-zinc-600 hover:bg-zinc-300 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                      }`}
+                      title="Klik untuk mengubah status tampil publik"
                     >
-                      Hapus
-                    </Tombol>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      <span
+                        className={`h-2 w-2 rounded-full ${
+                          isAktif
+                            ? "bg-emerald-600 dark:bg-emerald-400"
+                            : "bg-zinc-400 dark:bg-zinc-500"
+                        }`}
+                      />
+                      <span>
+                        {loadingToggleId === produk.id
+                          ? "Memproses..."
+                          : isAktif
+                          ? "Aktif"
+                          : "Nonaktif"}
+                      </span>
+                    </button>
+                  </td>
+                  <td className="px-5 py-3.5 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Tombol href={`/admin/produk/${produk.id}/ubah`} varian="garis">
+                        Ubah
+                      </Tombol>
+                      <Tombol
+                        type="button"
+                        varian="bahaya"
+                        onClick={() => setProdukHapus(produk)}
+                      >
+                        Hapus
+                      </Tombol>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -207,3 +252,4 @@ export default function TabelProduk({ daftarProduk = [] }) {
     </>
   );
 }
+

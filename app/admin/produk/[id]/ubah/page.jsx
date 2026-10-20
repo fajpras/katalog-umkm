@@ -21,6 +21,8 @@ export default async function HalamanUbahProduk({ params }) {
 
   // Ambil data lama dari Supabase
   let produk = null;
+  let daftarKategori = [];
+
   try {
     const { data, error } = await supabase
       .from("produk")
@@ -31,12 +33,31 @@ export default async function HalamanUbahProduk({ params }) {
     if (!error && data) {
       produk = data;
     }
+
+    const { data: dataKategori } = await supabase
+      .from("kategori")
+      .select("nama")
+      .order("nama", { ascending: true });
+
+    if (dataKategori && dataKategori.length > 0) {
+      daftarKategori = dataKategori.map((k) => k.nama);
+    } else {
+      const { data: dataProduk } = await supabase.from("produk").select("kategori");
+      if (dataProduk) {
+        daftarKategori = Array.from(new Set(dataProduk.map((p) => p.kategori).filter(Boolean)));
+      }
+    }
   } catch {
     // Abaikan error koneksi
   }
 
   if (!produk) {
     notFound();
+  }
+
+  // Pastikan kategori produk yang sedang diedit ada dalam pilihan
+  if (produk.kategori && !daftarKategori.includes(produk.kategori)) {
+    daftarKategori = [produk.kategori, ...daftarKategori];
   }
 
   return (
@@ -52,8 +73,14 @@ export default async function HalamanUbahProduk({ params }) {
       </div>
 
       <div className="rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900/50 sm:p-8">
-        <FormProduk produk={produk} labelTombol="Simpan perubahan" action={ubahProduk} />
+        <FormProduk
+          produk={produk}
+          daftarKategori={daftarKategori}
+          labelTombol="Perbarui produk"
+          action={ubahProduk}
+        />
       </div>
     </div>
   );
 }
+
