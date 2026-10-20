@@ -1,33 +1,43 @@
 @import "tailwindcss";
 
-/*
-  Token desain. Ganti nilai di sini untuk menyesuaikan dengan usahamu.
-  Penjelasan setiap token ada di DESIGN.md.
-*/
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-body), "Inter", ui-sans-serif, system-ui, sans-serif;
 
+  /* Backward compatibility tokens mapped to design system zinc & emerald */
   --color-latar: #ffffff;
-  --color-permukaan: #f1f5f2;
-  --color-garis: #dde5e0;
-  --color-teks: #1b2420;
-  --color-teks-lembut: #5b6a62;
+  --color-permukaan: #f4f4f5;
+  --color-garis: #e4e4e7;
+  --color-teks: #18181b;
+  --color-teks-lembut: #71717a;
 
-  --color-utama: #1f6b4f;
-  --color-utama-gelap: #154d39;
+  --color-utama: #059669;
+  --color-utama-gelap: #047857;
 
-  --color-harga: #7a4e09;
-  --color-harga-latar: #fbefd8;
+  --color-harga: #047857;
+  --color-harga-latar: #ecfdf5;
 
-  --color-bahaya: #b42318;
+  --color-bahaya: #dc2626;
 }
 
 html {
-  color: var(--color-teks);
-  background: var(--color-latar);
+  color-scheme: light dark;
 }
 
-:focus-visible {
-  outline: 3px solid var(--color-utama);
-  outline-offset: 2px;
+body {
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Respect user's motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
