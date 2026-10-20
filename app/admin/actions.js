@@ -75,6 +75,68 @@ export async function gantiPassword(prevState, formData) {
   return { sukses: "Password berhasil diganti." };
 }
 
+function validasiProduk(data) {
+  const errors = {};
+  const nama = data?.get?.("nama")?.toString()?.trim() || "";
+  const hargaRaw = data?.get?.("harga")?.toString()?.trim() || "";
+  const hargaDiskonRaw = data?.get?.("harga_diskon")?.toString()?.trim() || "";
+  const kategori = data?.get?.("kategori")?.toString()?.trim() || "";
+  const stokRaw = data?.get?.("stok")?.toString()?.trim() || "";
+
+  if (!nama) {
+    errors.nama = "Nama produk wajib diisi.";
+  } else if (nama.length < 3) {
+    errors.nama = "Nama produk minimal 3 karakter.";
+  }
+
+  if (!hargaRaw) {
+    errors.harga = "Harga produk wajib diisi.";
+  } else {
+    const harga = Number(hargaRaw);
+    if (isNaN(harga) || harga <= 0) {
+      errors.harga = "Harga harus berupa angka lebih dari 0.";
+    }
+  }
+
+  if (hargaDiskonRaw) {
+    const hargaDiskon = Number(hargaDiskonRaw);
+    const harga = Number(hargaRaw);
+    if (isNaN(hargaDiskon) || hargaDiskon < 0) {
+      errors.harga_diskon = "Harga diskon harus berupa angka valid.";
+    } else if (!isNaN(harga) && hargaDiskon >= harga) {
+      errors.harga_diskon = "Harga diskon harus lebih murah dari harga normal.";
+    }
+  }
+
+  if (!kategori) {
+    errors.kategori = "Kategori wajib dipilih atau diisi.";
+  }
+
+  if (stokRaw !== "") {
+    const stok = Number(stokRaw);
+    if (isNaN(stok) || stok < 0) {
+      errors.stok = "Jumlah stok tidak boleh negatif.";
+    }
+  }
+
+  return errors;
+}
+
+function ambilNilaiForm(data) {
+  return {
+    nama: data?.get?.("nama")?.toString() || "",
+    harga: data?.get?.("harga")?.toString() || "",
+    harga_diskon: data?.get?.("harga_diskon")?.toString() || "",
+    kategori: data?.get?.("kategori")?.toString() || "",
+    label: data?.get?.("label")?.toString() || "",
+    stok: data?.get?.("stok")?.toString() || "",
+    tersedia: data?.get?.("tersedia") === "true",
+    foto_url: data?.get?.("foto_url")?.toString() || "",
+    foto_galeri: data?.get?.("foto_galeri")?.toString() || "",
+    deskripsi: data?.get?.("deskripsi")?.toString() || "",
+  };
+}
+
 export async function tambahProduk(prevState, formData) {
   // Cek sesi di baris pertama
   const supabase = await buatKlienSesi();
@@ -88,37 +150,37 @@ export async function tambahProduk(prevState, formData) {
   }
 
   const data = formData instanceof FormData ? formData : prevState;
-  const nama = data?.get?.("nama")?.toString()?.trim() || "";
-  const hargaRaw = data?.get?.("harga")?.toString()?.trim() || "";
-  const hargaDiskonRaw = data?.get?.("harga_diskon")?.toString()?.trim() || "";
-  const kategori = data?.get?.("kategori")?.toString()?.trim() || "Umum";
-  const label = data?.get?.("label")?.toString()?.trim() || null;
-  const foto_url = data?.get?.("foto_url")?.toString()?.trim() || "/produk/kopi.svg";
-  const deskripsi = data?.get?.("deskripsi")?.toString()?.trim() || "";
-  const fotoGaleriRaw = data?.get?.("foto_galeri")?.toString()?.trim() || "";
+  const errors = validasiProduk(data);
+  const values = ambilNilaiForm(data);
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      error: "Terdapat isian yang belum sesuai. Silakan periksa kembali formulir.",
+      errors,
+      values,
+    };
+  }
+
+  const nama = values.nama.trim();
+  const hargaRaw = values.harga.trim();
+  const hargaDiskonRaw = values.harga_diskon.trim();
+  const kategori = values.kategori.trim();
+  const label = values.label.trim() || null;
+  const foto_url = values.foto_url.trim() || "/produk/kopi.svg";
+  const deskripsi = values.deskripsi.trim();
+  const fotoGaleriRaw = values.foto_galeri.trim();
   const foto_galeri = fotoGaleriRaw
     ? fotoGaleriRaw
         .split(/[\n,]/)
         .map((url) => url.trim())
         .filter((url) => url.length > 0)
     : [];
-  const stokRaw = data?.get?.("stok")?.toString()?.trim() || "";
+  const stokRaw = values.stok.trim();
   const stok = stokRaw !== "" ? parseInt(stokRaw, 10) : 10;
-  const tersedia = data?.get?.("tersedia") === "true";
-
-  if (!nama) {
-    return { error: "Nama produk wajib diisi." };
-  }
+  const tersedia = values.tersedia;
 
   const harga = parseInt(hargaRaw, 10);
-  if (isNaN(harga) || harga < 0) {
-    return { error: "Harga harus berupa angka valid dan tidak boleh negatif." };
-  }
-
   const harga_diskon = hargaDiskonRaw !== "" ? parseInt(hargaDiskonRaw, 10) : null;
-  if (harga_diskon !== null && (isNaN(harga_diskon) || harga_diskon < 0)) {
-    return { error: "Harga diskon harus berupa angka valid dan tidak boleh negatif." };
-  }
 
   const payload = {
     nama,
@@ -180,41 +242,42 @@ export async function ubahProduk(prevState, formData) {
 
   const data = formData instanceof FormData ? formData : prevState;
   const id = data?.get?.("id")?.toString();
-  const nama = data?.get?.("nama")?.toString()?.trim() || "";
-  const hargaRaw = data?.get?.("harga")?.toString()?.trim() || "";
-  const hargaDiskonRaw = data?.get?.("harga_diskon")?.toString()?.trim() || "";
-  const kategori = data?.get?.("kategori")?.toString()?.trim() || "Umum";
-  const label = data?.get?.("label")?.toString()?.trim() || null;
-  const foto_url = data?.get?.("foto_url")?.toString()?.trim() || "/produk/kopi.svg";
-  const deskripsi = data?.get?.("deskripsi")?.toString()?.trim() || "";
-  const fotoGaleriRaw = data?.get?.("foto_galeri")?.toString()?.trim() || "";
+
+  if (!id) {
+    return { error: "ID produk tidak valid." };
+  }
+
+  const errors = validasiProduk(data);
+  const values = ambilNilaiForm(data);
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      error: "Terdapat isian yang belum sesuai. Silakan periksa kembali formulir.",
+      errors,
+      values: { ...values, id },
+    };
+  }
+
+  const nama = values.nama.trim();
+  const hargaRaw = values.harga.trim();
+  const hargaDiskonRaw = values.harga_diskon.trim();
+  const kategori = values.kategori.trim();
+  const label = values.label.trim() || null;
+  const foto_url = values.foto_url.trim() || "/produk/kopi.svg";
+  const deskripsi = values.deskripsi.trim();
+  const fotoGaleriRaw = values.foto_galeri.trim();
   const foto_galeri = fotoGaleriRaw
     ? fotoGaleriRaw
         .split(/[\n,]/)
         .map((url) => url.trim())
         .filter((url) => url.length > 0)
     : [];
-  const stokRaw = data?.get?.("stok")?.toString()?.trim() || "";
+  const stokRaw = values.stok.trim();
   const stok = stokRaw !== "" ? parseInt(stokRaw, 10) : 10;
-  const tersedia = data?.get?.("tersedia") === "true";
-
-  if (!id) {
-    return { error: "ID produk tidak valid." };
-  }
-
-  if (!nama) {
-    return { error: "Nama produk wajib diisi." };
-  }
+  const tersedia = values.tersedia;
 
   const harga = parseInt(hargaRaw, 10);
-  if (isNaN(harga) || harga < 0) {
-    return { error: "Harga harus berupa angka valid dan tidak boleh negatif." };
-  }
-
   const harga_diskon = hargaDiskonRaw !== "" ? parseInt(hargaDiskonRaw, 10) : null;
-  if (harga_diskon !== null && (isNaN(harga_diskon) || harga_diskon < 0)) {
-    return { error: "Harga diskon harus berupa angka valid dan tidak boleh negatif." };
-  }
 
   const payload = {
     nama,
@@ -368,7 +431,6 @@ Ketentuan:
   }
 }
 
-
 export async function uploadFoto(formData) {
   // Cek sesi di baris pertama
   const supabase = await buatKlienSesi();
@@ -438,7 +500,6 @@ export async function uploadFoto(formData) {
     return { error: `Terjadi kesalahan saat upload: ${err.message}` };
   }
 }
-
 
 export async function tambahKategori(prevState, formData) {
   // Cek sesi di baris pertama
@@ -557,7 +618,6 @@ export async function hapusKategori(id, namaKategori) {
   revalidatePath("/");
   return { sukses: true };
 }
-
 
 export async function toggleAktifProduk(id, statusAktifSekarang) {
   // Cek sesi di baris pertama

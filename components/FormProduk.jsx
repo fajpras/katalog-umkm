@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useEffect } from "react";
 import Input from "@/components/Input";
 import Tombol from "@/components/Tombol";
 import { buatDeskripsiAI, uploadFoto } from "@/app/admin/actions";
@@ -20,6 +20,20 @@ export default function FormProduk({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [uploadSukses, setUploadSukses] = useState(false);
+
+  // Pertahankan nilai jika ada response state dari server
+  useEffect(() => {
+    if (state?.values) {
+      if (state.values.deskripsi !== undefined) {
+        setDeskripsi(state.values.deskripsi);
+      }
+      if (state.values.foto_url !== undefined) {
+        setFotoUrl(state.values.foto_url);
+      }
+    }
+  }, [state]);
+
+  const currentValues = state?.values;
 
   const handleGenerateAI = async (e) => {
     e.preventDefault();
@@ -90,7 +104,7 @@ export default function FormProduk({
   };
 
   return (
-    <form action={formAction} className="flex max-w-2xl flex-col gap-5">
+    <form action={formAction} noValidate className="flex max-w-2xl flex-col gap-5">
       {produk.id && <input type="hidden" name="id" value={produk.id} />}
 
       {state?.error && (
@@ -108,9 +122,9 @@ export default function FormProduk({
       <Input
         label="Nama produk"
         name="nama"
-        defaultValue={produk.nama || ""}
+        defaultValue={currentValues?.nama ?? (produk.nama || "")}
         placeholder="Contoh: Kopi Bubuk Robusta 250 g"
-        required
+        error={state?.errors?.nama}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -119,17 +133,18 @@ export default function FormProduk({
           name="harga"
           type="number"
           min="0"
-          defaultValue={produk.harga ?? ""}
+          defaultValue={currentValues?.harga ?? (produk.harga ?? "")}
           placeholder="Contoh: 45000"
-          required
+          error={state?.errors?.harga}
         />
         <Input
           label="Harga Diskon (Rp, opsional)"
           name="harga_diskon"
           type="number"
           min="0"
-          defaultValue={produk.harga_diskon ?? ""}
+          defaultValue={currentValues?.harga_diskon ?? (produk.harga_diskon ?? "")}
           placeholder="Contoh: 35000 (jika promo)"
+          error={state?.errors?.harga_diskon}
         />
       </div>
 
@@ -142,13 +157,17 @@ export default function FormProduk({
             <select
               name="kategori"
               defaultValue={
-                produk.kategori ||
-                (typeof daftarKategori[0] === "object"
-                  ? daftarKategori[0].nama
-                  : daftarKategori[0])
+                currentValues?.kategori !== undefined
+                  ? currentValues.kategori
+                  : (produk.kategori || "")
               }
-              className="h-10 w-full rounded-2xl border border-zinc-200/80 bg-white px-3.5 text-sm text-zinc-900 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-800/80 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-indigo-400"
+              className={`h-10 w-full rounded-2xl border ${
+                state?.errors?.kategori
+                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500 dark:focus:border-red-500"
+                  : "border-zinc-200/80 focus:border-indigo-500 focus:ring-indigo-500/20 dark:border-zinc-800/80 dark:focus:border-indigo-400"
+              } bg-white px-3.5 text-sm text-zinc-900 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-900 dark:text-zinc-100`}
             >
+              <option value="">-- Pilih Kategori --</option>
               {daftarKategori.map((kat) => {
                 const namaKat = typeof kat === "object" ? kat.nama : kat;
                 return (
@@ -162,16 +181,25 @@ export default function FormProduk({
             <input
               type="text"
               name="kategori"
-              defaultValue={produk.kategori || ""}
+              defaultValue={currentValues?.kategori ?? (produk.kategori || "")}
               placeholder="Contoh: Minuman, Camilan, Kerajinan"
-              className="h-10 w-full rounded-2xl border border-zinc-200/80 bg-white px-3.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-800/80 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-indigo-400"
+              className={`h-10 w-full rounded-2xl border ${
+                state?.errors?.kategori
+                  ? "border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500 dark:focus:border-red-500"
+                  : "border-zinc-200/80 focus:border-indigo-500 focus:ring-indigo-500/20 dark:border-zinc-800/80 dark:focus:border-indigo-400"
+              } bg-white px-3.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition-colors focus:outline-none focus:ring-2 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500`}
             />
+          )}
+          {state?.errors?.kategori && (
+            <span className="text-xs font-normal text-red-600 dark:text-red-400">
+              {state.errors.kategori}
+            </span>
           )}
         </div>
         <Input
           label="Label / Badge (opsional)"
           name="label"
-          defaultValue={produk.label || ""}
+          defaultValue={currentValues?.label ?? (produk.label || "")}
           placeholder="Contoh: Terlaris, Baru, Promo"
         />
       </div>
@@ -182,8 +210,13 @@ export default function FormProduk({
           name="stok"
           type="number"
           min="0"
-          defaultValue={produk.stok !== undefined && produk.stok !== null ? produk.stok : 10}
+          defaultValue={
+            currentValues?.stok !== undefined
+              ? currentValues.stok
+              : (produk.stok !== undefined && produk.stok !== null ? produk.stok : 10)
+          }
           placeholder="Contoh: 10 (isi 0 jika habis)"
+          error={state?.errors?.stok}
         />
         <div className="flex flex-col gap-1.5 justify-center sm:pt-6">
           <label className="flex items-center gap-3 cursor-pointer select-none rounded-2xl border border-zinc-200/80 bg-white px-4 py-2.5 dark:border-zinc-800/80 dark:bg-zinc-900">
@@ -192,8 +225,10 @@ export default function FormProduk({
               name="tersedia"
               value="true"
               defaultChecked={
-                produk.tersedia !== false &&
-                (produk.stok === undefined || produk.stok === null || Number(produk.stok) > 0)
+                currentValues
+                  ? currentValues.tersedia
+                  : (produk.tersedia !== false &&
+                    (produk.stok === undefined || produk.stok === null || Number(produk.stok) > 0))
               }
               className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800"
             />
@@ -288,9 +323,11 @@ export default function FormProduk({
           name="foto_galeri"
           rows={2}
           defaultValue={
-            Array.isArray(produk.foto_galeri)
-              ? produk.foto_galeri.join("\n")
-              : (produk.foto_galeri || "")
+            currentValues?.foto_galeri !== undefined
+              ? currentValues.foto_galeri
+              : (Array.isArray(produk.foto_galeri)
+                ? produk.foto_galeri.join("\n")
+                : (produk.foto_galeri || ""))
           }
           placeholder="Tulis satu link per baris atau pisahkan dengan koma&#10;Contoh: /produk/keripik.svg, /produk/sambal.svg"
           className="w-full rounded-2xl border border-zinc-200/80 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-800/80 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-indigo-400"
