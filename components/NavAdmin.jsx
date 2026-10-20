@@ -11,6 +11,12 @@ export default function NavAdmin() {
         Produk
       </Link>
       <Link
+        href="/admin/kategori"
+        className="font-semibold text-zinc-900 transition-colors hover:text-indigo-600 dark:text-zinc-100 dark:hover:text-indigo-400"
+      >
+        Kategori
+      </Link>
+      <Link
         href="/admin/password"
         className="font-semibold text-zinc-900 transition-colors hover:text-indigo-600 dark:text-zinc-100 dark:hover:text-indigo-400"
       >

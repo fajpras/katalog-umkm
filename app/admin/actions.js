@@ -438,3 +438,122 @@ export async function uploadFoto(formData) {
     return { error: `Terjadi kesalahan saat upload: ${err.message}` };
   }
 }
+
+
+export async function tambahKategori(prevState, formData) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  const data = formData instanceof FormData ? formData : prevState;
+  const nama = data?.get?.("nama")?.toString()?.trim() || "";
+
+  if (!nama) {
+    return { error: "Nama kategori wajib diisi." };
+  }
+
+  const { error } = await supabase.from("kategori").insert({ nama });
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "Kategori dengan nama tersebut sudah ada." };
+    }
+    return { error: error.message || "Gagal menambahkan kategori." };
+  }
+
+  revalidatePath("/admin/kategori");
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { sukses: "Kategori baru berhasil ditambahkan." };
+}
+
+export async function ubahKategori(prevState, formData) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  const data = formData instanceof FormData ? formData : prevState;
+  const id = data?.get?.("id")?.toString();
+  const namaBaru = data?.get?.("nama")?.toString()?.trim() || "";
+  const namaLama = data?.get?.("nama_lama")?.toString()?.trim() || "";
+
+  if (!id || !namaBaru) {
+    return { error: "Nama kategori wajib diisi." };
+  }
+
+  const { error } = await supabase
+    .from("kategori")
+    .update({ nama: namaBaru })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message || "Gagal mengubah nama kategori." };
+  }
+
+  // Update nama kategori di seluruh produk terkait jika nama berubah
+  if (namaLama && namaLama !== namaBaru) {
+    await supabase
+      .from("produk")
+      .update({ kategori: namaBaru })
+      .eq("kategori", namaLama);
+  }
+
+  revalidatePath("/admin/kategori");
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { sukses: "Kategori berhasil diperbarui." };
+}
+
+export async function hapusKategori(id, namaKategori) {
+  // Cek sesi di baris pertama
+  const supabase = await buatKlienSesi();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Sesi telah berakhir atau Anda belum login." };
+  }
+
+  if (!id) {
+    return { error: "ID kategori tidak valid." };
+  }
+
+  // Cek apakah ada produk yang masih memakai kategori ini
+  if (namaKategori) {
+    const { count, error: countErr } = await supabase
+      .from("produk")
+      .select("id", { count: "exact", head: true })
+      .eq("kategori", namaKategori);
+
+    if (!countErr && count > 0) {
+      return {
+        error: `Kategori "${namaKategori}" tidak dapat dihapus karena masih digunakan oleh ${count} produk. Ubah atau hapus produk terkait terlebih dahulu.`,
+      };
+    }
+  }
+
+  const { error } = await supabase.from("kategori").delete().eq("id", id);
+  if (error) {
+    return { error: error.message || "Gagal menghapus kategori." };
+  }
+
+  revalidatePath("/admin/kategori");
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { sukses: true };
+}

@@ -5,7 +5,12 @@ import Input from "@/components/Input";
 import Tombol from "@/components/Tombol";
 import { buatDeskripsiAI, uploadFoto } from "@/app/admin/actions";
 
-export default function FormProduk({ produk = {}, labelTombol = "Simpan produk", action }) {
+export default function FormProduk({
+  produk = {},
+  daftarKategori = [],
+  labelTombol = "Simpan produk",
+  action,
+}) {
   const [state, formAction, isPending] = useActionState(action, null);
   const [deskripsi, setDeskripsi] = useState(produk.deskripsi || "");
   const [fotoUrl, setFotoUrl] = useState(produk.foto_url || "");
@@ -22,7 +27,7 @@ export default function FormProduk({ produk = {}, labelTombol = "Simpan produk",
 
     const form = e.currentTarget.closest("form");
     const namaInput = form?.querySelector('input[name="nama"]');
-    const kategoriInput = form?.querySelector('input[name="kategori"]');
+    const kategoriInput = form?.querySelector('select[name="kategori"], input[name="kategori"]');
 
     const nama = namaInput?.value?.trim() || "";
     const kategori = kategoriInput?.value?.trim() || "Umum";
@@ -129,12 +134,40 @@ export default function FormProduk({ produk = {}, labelTombol = "Simpan produk",
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Input
-          label="Kategori"
-          name="kategori"
-          defaultValue={produk.kategori || ""}
-          placeholder="Contoh: Minuman, Camilan, Kerajinan"
-        />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+            Kategori
+          </label>
+          {daftarKategori && daftarKategori.length > 0 ? (
+            <select
+              name="kategori"
+              defaultValue={
+                produk.kategori ||
+                (typeof daftarKategori[0] === "object"
+                  ? daftarKategori[0].nama
+                  : daftarKategori[0])
+              }
+              className="h-10 w-full rounded-2xl border border-zinc-200/80 bg-white px-3.5 text-sm text-zinc-900 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-800/80 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-indigo-400"
+            >
+              {daftarKategori.map((kat) => {
+                const namaKat = typeof kat === "object" ? kat.nama : kat;
+                return (
+                  <option key={namaKat} value={namaKat}>
+                    {namaKat}
+                  </option>
+                );
+              })}
+            </select>
+          ) : (
+            <input
+              type="text"
+              name="kategori"
+              defaultValue={produk.kategori || ""}
+              placeholder="Contoh: Minuman, Camilan, Kerajinan"
+              className="h-10 w-full rounded-2xl border border-zinc-200/80 bg-white px-3.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-800/80 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-indigo-400"
+            />
+          )}
+        </div>
         <Input
           label="Label / Badge (opsional)"
           name="label"
