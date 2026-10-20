@@ -1,19 +1,25 @@
 import Link from "next/link";
 import KartuProduk from "@/components/KartuProduk";
 import PilihUrutan from "@/components/PilihUrutan";
+import Paginasi from "@/components/Paginasi";
 import { toko } from "@/lib/toko";
 import { buatKlienServer } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
+
+const ITEM_PER_HALAMAN = 12;
 
 export default async function HalamanKatalog({ searchParams }) {
   const sp = (await searchParams) || {};
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const kategori = typeof sp.kategori === "string" ? sp.kategori.trim() : "";
   const urut = typeof sp.urut === "string" ? sp.urut.trim() : "terbaru";
+  const halaman = Math.max(1, parseInt(sp.page, 10) || 1);
 
   let daftarProduk = [];
   let semuaKategori = ["Semua"];
+  let totalData = 0;
+  let totalHalaman = 1;
   let pesanError = null;
 
   try {
@@ -26,8 +32,8 @@ export default async function HalamanKatalog({ searchParams }) {
       semuaKategori = ["Semua", ...Array.from(kategoriSet)];
     }
 
-    // Bangun query produk dengan filter dan urutan
-    let query = supabase.from("produk").select("*");
+    // Bangun query produk dengan filter, urutan, dan range paginasi
+    let query = supabase.from("produk").select("*", { count: "exact" });
 
     if (q) {
       query = query.ilike("nama", `%${q}%`);
@@ -46,18 +52,24 @@ export default async function HalamanKatalog({ searchParams }) {
       query = query.order("created_at", { ascending: false });
     }
 
-    const { data, error } = await query;
+    const dari = (halaman - 1) * ITEM_PER_HALAMAN;
+    const sampai = dari + ITEM_PER_HALAMAN - 1;
+    query = query.range(dari, sampai);
+
+    const { data, count, error } = await query;
 
     if (error) {
       pesanError = error.message;
     } else {
       daftarProduk = data || [];
+      totalData = count || 0;
+      totalHalaman = Math.max(1, Math.ceil(totalData / ITEM_PER_HALAMAN));
     }
   } catch (err) {
     pesanError = err.message;
   }
 
-  const adaFilter = Boolean(q || (kategori && kategori !== "Semua") || (urut && urut !== "terbaru"));
+  const adaFilter = Boolean(q || (kategori && kategori !== "Semua") || (urut && urut !== "terbaru") || halaman > 1);
 
   return (
     <>
@@ -157,7 +169,7 @@ export default async function HalamanKatalog({ searchParams }) {
               {kategori && kategori !== "Semua" ? `Kategori: ${kategori}` : "Semua Produk"}
             </h2>
             <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-              Menampilkan {daftarProduk.length} produk
+              Menampilkan {daftarProduk.length} dari {totalData} produk (Halaman {halaman} dari {totalHalaman})
             </p>
           </div>
 
@@ -206,11 +218,22 @@ export default async function HalamanKatalog({ searchParams }) {
             </div>
           )
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {daftarProduk.map((produk) => (
-              <KartuProduk key={produk.id} produk={produk} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {daftarProduk.map((produk) => (
+                <KartuProduk key={produk.id} produk={produk} />
+              ))}
+            </div>
+
+            {/* Paginasi 12 item/halaman */}
+            <Paginasi
+              page={halaman}
+              totalPages={totalHalaman}
+              q={q}
+              kategori={kategori}
+              urut={urut}
+            />
+          </>
         )}
       </section>
     </>
